@@ -1,0 +1,29 @@
+{
+  "name": "Timvi",
+  "version": "1.0.0",
+  "description": "Set of smart contracts being the underlying mechanism of the Timvi ecosystem",
+  "main": "",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "dependencies": {
+    "chai": "^4.2.0",
+    "eth-gas-reporter": "^0.2.11",
+    "openzeppelin-test-helpers": "^0.4.3",
+    "solidity-coverage": "^0.6.4",
+    "truffle": "^5.0.34"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "./node_modules/.bin/truffle test",
+    "coverage": "npx solidity-coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://TimviOfficial@github.com/TimviOfficial/Timvi.git"
+  },
+  "author": "TimviOfficial",
+  "license": "ISC",
+  "homepage": "https://github.com/TimviOfficial/Timvi"
+}
