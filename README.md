@@ -1,5 +1,7 @@
 # Timvi Ecosystem
 
+Smart contracts are written in Solidity v0.5.11
+
 - [Logic](contracts/Logic.sol) ERC-721 Non-Fungible TBox Token contract. The main Timvi stablecoin logic contract.
 - [TimviSettings](contracts/TimviSettings.sol) Settings store.
 - [TimviToken](contracts/TimviToken.sol) ERC-20 Timvi stablecoin.
