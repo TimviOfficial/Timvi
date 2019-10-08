@@ -1,12 +1,12 @@
 # Timvi Ecosystem
 
-- [Logic](contracts/Logic.sol) ERC-721 Non-Fungible TBox Token contract. The main Timvi stablecoin logic.
+- [Logic](contracts/Logic.sol) ERC-721 Non-Fungible TBox Token contract. The main Timvi stablecoin logic contract.
 - [TimviSettings](contracts/TimviSettings.sol) Settings store.
 - [TimviToken](contracts/TimviToken.sol) ERC-20 Timvi stablecoin.
 - [PriceGetter](oracle-contract/PriceGetter.sol) ETHUSD price oracle contract (using Oraclize).
-- [1by1](contracts/services/leverage-exchange/ServiceExchange.sol) With 1by1 you can exchange ETH to TMV according to the system’s internal rate.
-- [Leverage](contracts/services/leverage-exchange/ServiceToGetEtherLeverage.sol) Service that allows you to receive ETH for a collateral in ETH. 
-- [BondService.sol](contracts/services/bond/BondService.sol) TBond is the service you can choose if you want to withdraw and sell TMV to get ETH fast and easy.
+- [1by1](contracts/services/leverage-exchange/ExchangeService.sol) With 1by1 you can exchange ETH to TMV according to the system’s internal rate.
+- [Leverage](contracts/services/leverage-exchange/LeverageService.sol) Service that allows you to receive ETH for a collateral in ETH. 
+- [Bond](contracts/services/bond/BondService.sol) TBond is the service you can choose if you want to withdraw and sell TMV to get ETH fast and easy.
 
 
 ## Deploy
@@ -24,8 +24,8 @@
 
 #### Exchange / Leverage
 
-- Deploy [ServiceExchange.sol](contracts/services/leverage-exchange/ServiceExchange.sol) with TimviSetttings address as constructor parameter
-- Deploy [ServiceToGetEtherLeverage.sol](contracts/services/leverage-exchange/ServiceToGetEtherLeverage.sol) with TimviSetttings address as constructor parameter
+- Deploy [ServiceExchange.sol](contracts/services/leverage-exchange/ExchangeService.sol) with TimviSetttings address as constructor parameter
+- Deploy [ServiceToGetEtherLeverage.sol](contracts/services/leverage-exchange/LeverageService.sol) with TimviSetttings address as constructor parameter
 
 
 #### Bond
