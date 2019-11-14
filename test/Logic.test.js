@@ -6,12 +6,12 @@ const { expect } = require('chai');
 
 const { ZERO_ADDRESS } = constants;
 
-const Classic = artifacts.require('Logic');
+const Classic = artifacts.require('TBoxManager');
 const Settings = artifacts.require('TimviSettings');
 const Token = artifacts.require('TimviToken');
 const Oracle = artifacts.require('OracleContractMock');
 
-contract('Logic', function ([manager, owner, anotherAccount]) {
+contract('TBoxManager', function ([manager, owner, anotherAccount]) {
 
     // deploy & initial settings
     beforeEach(async function () {

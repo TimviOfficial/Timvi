@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
 import "../../helpers/IToken.sol";
-import "../../helpers/ILogic.sol";
+import "../../helpers/ITBoxManager.sol";
 
 
 /// @title LeverageService
@@ -125,7 +125,7 @@ contract LeverageService {
     /// @dev Creates a Bid.
     function create(uint256 _percent) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
-        require(_percent >= ILogic(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
+        require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
 
         Bid memory _bid = Bid(
             tx.origin,
@@ -155,12 +155,12 @@ contract LeverageService {
 
         uint256 _sysEth = _eth.mul(commission).div(divider);
         systemETH = systemETH.add(_sysEth);
-        uint256 _tmv = _eth.mul(ILogic(settings.logicManager()).rate()).div(ILogic(settings.logicManager()).precision());
-        uint256 _box = ILogic(settings.logicManager()).create.value(bids[_id].pack)(_tmv);
+        uint256 _tmv = _eth.mul(ITBoxManager(settings.logicManager()).rate()).div(ITBoxManager(settings.logicManager()).precision());
+        uint256 _box = ITBoxManager(settings.logicManager()).create.value(bids[_id].pack)(_tmv);
         uint256 _sysTmv = _tmv.mul(commission).div(divider);
         delete bids[_id];
         _owner.transfer(_eth.sub(_sysEth));
-        ILogic(settings.logicManager()).transferFrom(address(this), _owner, _box);
+        ITBoxManager(settings.logicManager()).transferFrom(address(this), _owner, _box);
         IToken(settings.tmvAddress()).transfer(msg.sender, _tmv.sub(_sysTmv));
         emit BidMatched(_id, _box, msg.sender, _owner);
     }

@@ -4,7 +4,7 @@ import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
 import "../../helpers/IToken.sol";
 import "../../helpers/IOracle.sol";
-import "../../helpers/ILogic.sol";
+import "../../helpers/ITBoxManager.sol";
 
 
 /// @title Gate
@@ -234,7 +234,7 @@ contract Gate {
 
     /// @dev Returns precision using for USD and commission calculation.
     function precision() public view returns(uint256) {
-        return ILogic(settings.logicManager()).precision();
+        return ITBoxManager(settings.logicManager()).precision();
     }
 
     /// @dev Calculates the ether amount to pay for a provided TMV amount.

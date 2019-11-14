@@ -3,7 +3,7 @@ pragma solidity 0.4.25;
 import "../../helpers/SafeMath.sol";
 import "../../helpers/IToken.sol";
 import "../../helpers/ISettings.sol";
-import "../../helpers/ILogic.sol";
+import "../../helpers/ITBoxManager.sol";
 import "../../helpers/IOracle.sol";
 
 
@@ -153,7 +153,7 @@ contract BondService {
     /// @return New Bond ID.
     function leverage(uint256 _percent, uint256 _expiration, uint256 _yearFee) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
-        require(_percent >= ILogic(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
+        require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
         require(_yearFee <= 10000, "Fee out of range");
 
@@ -267,7 +267,7 @@ contract BondService {
     function changePercent(uint256 _id, uint256 _percent) internal {
         uint256 _oldPercent = bonds[_id].percent;
         if (_percent != 0 && _oldPercent != _percent) {
-            require(_percent >= ILogic(settings.logicManager()).withdrawPercent(bonds[_id].deposit), "Collateralization is not enough");
+            require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(bonds[_id].deposit), "Collateralization is not enough");
             bonds[_id].percent = _percent;
         }
     }
@@ -301,7 +301,7 @@ contract BondService {
         systemETH = systemETH.add(_sysEth);
 
         uint256 _tmv = _eth.mul(rate()).div(precision());
-        uint256 _box = ILogic(settings.logicManager()).create.value(bonds[_id].deposit)(_tmv);
+        uint256 _box = ITBoxManager(settings.logicManager()).create.value(bonds[_id].deposit)(_tmv);
 
         bonds[_id].owner = msg.sender;
         bonds[_id].tmv = _tmv;
@@ -325,7 +325,7 @@ contract BondService {
         systemETH = systemETH.add(_sysEth);
 
         uint256 _tmv = bonds[_id].deposit.mul(rate()).div(precision());
-        uint256 _box = ILogic(settings.logicManager()).create.value(msg.value)(_tmv);
+        uint256 _box = ITBoxManager(settings.logicManager()).create.value(msg.value)(_tmv);
 
         bonds[_id].emitter = msg.sender;
         bonds[_id].tmv = _tmv;
@@ -377,7 +377,7 @@ contract BondService {
         }
 
         if (_eth > 0) {
-            ILogic(settings.logicManager()).close(bond.tBoxId);
+            ITBoxManager(settings.logicManager()).close(bond.tBoxId);
             delete bonds[_id];
             msg.sender.transfer(_eth);
         } else {
@@ -404,16 +404,16 @@ contract BondService {
         }
 
         if (_tmv != 0)
-            _eth = ILogic(settings.logicManager()).withdrawableEth(bonds[_id].tBoxId);
+            _eth = ITBoxManager(settings.logicManager()).withdrawableEth(bonds[_id].tBoxId);
 
         uint256 _commission = _eth.mul(bonds[_id].sysFee).div(divider);
 
         if (_commission > 0)
-            ILogic(settings.logicManager()).withdrawEth(bonds[_id].tBoxId, _commission);
+            ITBoxManager(settings.logicManager()).withdrawEth(bonds[_id].tBoxId, _commission);
 
         systemETH = systemETH.add(_commission);
 
-        ILogic(settings.logicManager()).transferFrom(address(this), bonds[_id].owner, bonds[_id].tBoxId);
+        ITBoxManager(settings.logicManager()).transferFrom(address(this), bonds[_id].owner, bonds[_id].tBoxId);
 
         emit BondExpired(_id, bonds[_id].emitter, bonds[_id].owner);
 
@@ -423,7 +423,7 @@ contract BondService {
     /// @dev Returns TBox parameters.
     /// @param _id A Bond ID.
     function getBox(uint256 _id) public view returns(uint256, uint256) {
-        return ILogic(settings.logicManager()).boxes(_id);
+        return ITBoxManager(settings.logicManager()).boxes(_id);
     }
 
     /// @dev Needs to claim funds from the logic contract to execute finishing and expiration.
@@ -484,7 +484,7 @@ contract BondService {
 
     /// @dev Returns precision using for USD and commission calculation.
     function precision() public view returns(uint256) {
-        return ILogic(settings.logicManager()).precision();
+        return ITBoxManager(settings.logicManager()).precision();
     }
 
     /// @dev Returns current oracle ETH/USD price with precision.

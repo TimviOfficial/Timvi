@@ -1,9 +1,9 @@
 pragma solidity 0.4.25;
 
 
-/// @title ILogic
+/// @title ITBoxManager
 /// @dev Interface for interaction with the TMV logic contract to manage Boxes.
-interface ILogic {
+interface ITBoxManager {
     function create(uint256 withdraw) external payable returns (uint256);
     function precision() external view returns (uint256);
     function rate() external view returns (uint256);

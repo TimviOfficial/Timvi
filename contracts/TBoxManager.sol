@@ -6,8 +6,8 @@ import "./helpers/IToken.sol";
 import "./helpers/IOracle.sol";
 
 
-/// @title Logic
-contract Logic is TBoxToken {
+/// @title TBoxManager
+contract TBoxManager is TBoxToken {
 
     // Total packed Ether
     uint256 public globalETH;

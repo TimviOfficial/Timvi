@@ -2,7 +2,7 @@ pragma solidity 0.4.25;
 
 import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
-import "../../helpers/ILogic.sol";
+import "../../helpers/ITBoxManager.sol";
 import "../../helpers/IToken.sol";
 
 
@@ -150,12 +150,12 @@ contract ExchangeService {
         uint256 _eth = asks[_id].pack;
         uint256 _sysEth = _eth.mul(commission).div(divider);
         systemETH = systemETH.add(_sysEth);
-        uint256 _tmv = _eth.mul(ILogic(settings.logicManager()).rate()).div(ILogic(settings.logicManager()).precision());
-        uint256 _box = ILogic(settings.logicManager()).create.value(msg.value)(_tmv);
+        uint256 _tmv = _eth.mul(ITBoxManager(settings.logicManager()).rate()).div(ITBoxManager(settings.logicManager()).precision());
+        uint256 _box = ITBoxManager(settings.logicManager()).create.value(msg.value)(_tmv);
         uint256 _sysTmv = _tmv.mul(commission).div(divider);
         delete asks[_id];
         msg.sender.transfer(_eth.sub(_sysEth));
-        ILogic(settings.logicManager()).transferFrom(address(this), msg.sender, _box);
+        ITBoxManager(settings.logicManager()).transferFrom(address(this), msg.sender, _box);
         IToken(settings.tmvAddress()).transfer(_owner, _tmv.sub(_sysTmv));
         emit AskMatched(_id, _box, msg.sender, _owner);
         return _tmv.sub(_sysTmv);

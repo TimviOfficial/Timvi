@@ -4,7 +4,7 @@ const { expect } = require('chai');
 const BN = web3.utils.BN;
 const { ZERO_ADDRESS } = constants;
 
-const Logic = artifacts.require('Logic');
+const TBoxManager = artifacts.require('TBoxManager');
 const Settings = artifacts.require('TimviSettings');
 const Token = artifacts.require('TimviToken');
 const Oracle = artifacts.require('OracleContractMock');
@@ -15,7 +15,7 @@ contract('ExchangeService', function ([owner, anotherAccount]) {
     // deploy & initial settings
     beforeEach(async function () {
         this.settings = await Settings.new();
-        this.logic = await Logic.new(this.settings.address);
+        this.logic = await TBoxManager.new(this.settings.address);
         this.token = await Token.new(this.settings.address);
         this.oracle = await Oracle.new();
         await this.settings.setTmvAddress(this.token.address);
