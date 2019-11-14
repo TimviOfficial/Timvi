@@ -80,7 +80,7 @@ contract LeverageService {
         _;
     }
 
-    modifier ensureExchnageOrder(uint256 _id) {
+    modifier ensureExchangeOrder(uint256 _id) {
         require(orders[_id].owner != address(0), "Order doesn't exist");
         require(orders[_id].percent == 0, "Not an exchange order");
         _;
@@ -198,7 +198,7 @@ contract LeverageService {
     }
 
     /// @dev Uses to match an exchange Order.
-    function takeExchangeOrder(uint256 _id) external payable ensureExchnageOrder(_id) validTx returns(uint256) {
+    function takeExchangeOrder(uint256 _id) external payable ensureExchangeOrder(_id) validTx returns(uint256) {
         address _owner = orders[_id].owner;
         uint256 _eth = orders[_id].pack;
         uint256 _sysEth = _eth.mul(feeExchange).div(divider);
