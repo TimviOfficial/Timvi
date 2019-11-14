@@ -92,8 +92,7 @@ contract Gate {
         emit AdminChanged(admin);
     }
 
-
-    function () external payable {
+    function fundAdmin() external payable {
         emit Funded(msg.value);
     }
 
