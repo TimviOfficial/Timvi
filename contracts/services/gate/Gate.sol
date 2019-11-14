@@ -150,6 +150,7 @@ contract Gate {
 
     function convert(uint256 _amount) external validTx {
         require(_amount >= minOrder, "Too small amount");
+        require(IToken(settings.tmvAddress()).allowance(msg.sender, address(this)) >= _amount, "Gate is not approved to transfer enough tokens");
         uint256 eth = tmv2eth(_amount);
         if (address(this).balance >= eth) {
             IToken(settings.tmvAddress()).transferFrom(msg.sender, timviWallet, _amount);
