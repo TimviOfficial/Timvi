@@ -423,10 +423,10 @@ contract BondService {
 
         uint256 _commission = _eth.mul(bonds[_id].sysFee).div(divider);
 
-        if (_commission > 0)
+        if (_commission > 0) {
             ITBoxManager(settings.logicManager()).withdrawEth(bonds[_id].tBoxId, _commission);
-
-        systemETH = systemETH.add(_commission);
+            systemETH = systemETH.add(_commission);
+        }
 
         ITBoxManager(settings.logicManager()).transferFrom(address(this), bonds[_id].holder, bonds[_id].tBoxId);
 
