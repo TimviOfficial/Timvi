@@ -129,15 +129,17 @@ contract TBoxManager is TBoxToken {
             uint256 _maxGlobal = globalWithdrawableTmv(msg.value);
 
             // Determine the higher number of tokens
-            if (_tokenLimit > _maxGlobal)
+            if (_tokenLimit > _maxGlobal) {
                 _tokenLimit = _maxGlobal;
+            }
 
             // The number of tokens that can be withdrawn anyway
             uint256 _local = defaultWithdrawableTmv(msg.value);
 
             // Determine the higher number of tokens
-            if (_tokenLimit < _local)
+            if (_tokenLimit < _local) {
                 _tokenLimit = _local;
+            }
 
             // You can only withdraw available amount
             require(_tokensToWithdraw <= _tokenLimit, "Token amount is more than available");
@@ -392,8 +394,9 @@ contract TBoxManager is TBoxToken {
         // Number of tokens that can be withdrawn for Box's collateral
         uint256 _amount = withdrawableTmv(box.collateral);
 
-        if (box.tmvReleased >= _amount)
+        if (box.tmvReleased >= _amount) {
             return 0;
+        }
 
         // Return withdrawable rest
         return _amount.sub(box.tmvReleased);
@@ -405,9 +408,13 @@ contract TBoxManager is TBoxToken {
         // Amount of Ether that is not used in collateralization
         uint256 _avlbl = _freeEth(_id);
         // Return available Ether to withdraw
-        if (_avlbl == 0) return 0;
+        if (_avlbl == 0) {
+            return 0;
+        }
         uint256 _rest = boxes[_id].collateral.sub(_avlbl);
-        if (_rest < settings.minDeposit()) return boxes[_id].collateral.sub(settings.minDeposit());
+        if (_rest < settings.minDeposit()) {
+            return boxes[_id].collateral.sub(settings.minDeposit());
+        }
         else return _avlbl;
     }
 
@@ -431,10 +438,11 @@ contract TBoxManager is TBoxToken {
             if (box.collateral > _need) {
                 // Free Ether amount when the system is overcapitalized
                 uint256 _free = box.collateral.sub(_need);
-                if (_free > _maxGlobal)
+                if (_free > _maxGlobal) {
                     // Store available amount when Box available Ether amount
                     // is more than global available
                     _globalAvailable = _maxGlobal;
+                }
 
                 // Return available amount of Ether to withdraw when the Box withdrawable
                 // amount of Ether is smaller than global withdrawable amount of Ether
@@ -458,8 +466,9 @@ contract TBoxManager is TBoxToken {
     /// @dev Given a Box ID, returns collateral percent.
     function collateralPercent(uint256 _id) public view onlyExists(_id) returns(uint256) {
         Box memory box = boxes[_id];
-        if (box.tmvReleased == 0)
+        if (box.tmvReleased == 0) {
             return 10**27; //some unreachable number
+        }
         uint256 _ethCollateral = box.collateral;
         // division by 100 is not necessary because to get the percent you need to multiply by 100
         return _ethCollateral.mul(rate()).div(box.tmvReleased);
@@ -475,14 +484,18 @@ contract TBoxManager is TBoxToken {
     /// @dev Returns the global collateralization percent.
     function globalCollateralization() public view returns (uint256) {
         uint256 _supply = IToken(settings.tmvAddress()).totalSupply();
-        if (_supply == 0) return settings.globalTargetCollateralization();
+        if (_supply == 0) {
+            return settings.globalTargetCollateralization();
+        }
         return globalETH.mul(rate()).div(_supply);
     }
 
     /// @dev Returns the number of tokens that can be safely withdrawn from the system.
     function globalWithdrawableTmv(uint256 _value) public view returns (uint256) {
         uint256 _supply = IToken(settings.tmvAddress()).totalSupply();
-        if (globalCollateralization() <= settings.globalTargetCollateralization()) return 0;
+        if (globalCollateralization() <= settings.globalTargetCollateralization()) {
+            return 0;
+        }
         uint256 _totalBackedTmv = defaultWithdrawableTmv(globalETH.add(_value));
         return _totalBackedTmv.sub(_supply);
     }
@@ -490,7 +503,9 @@ contract TBoxManager is TBoxToken {
     /// @dev Returns Ether amount that can be safely withdrawn from the system.
     function globalWithdrawableEth() public view returns (uint256) {
         uint256 _supply = IToken(settings.tmvAddress()).totalSupply();
-        if (globalCollateralization() <= settings.globalTargetCollateralization()) return 0;
+        if (globalCollateralization() <= settings.globalTargetCollateralization()) {
+            return 0;
+        }
         uint256 _need = defaultFrozenEth(_supply);
         return globalETH.sub(_need);
     }
@@ -541,11 +556,13 @@ contract TBoxManager is TBoxToken {
     function withdrawableTmv(uint256 _collateral) public view returns(uint256) {
         uint256 _amount = overCapWithdrawableTmv(_collateral);
         uint256 _maxGlobal = globalWithdrawableTmv(0);
-        if (_amount > _maxGlobal)
+        if (_amount > _maxGlobal) {
             _amount = _maxGlobal;
+        }
         uint256 _local = defaultWithdrawableTmv(_collateral);
-        if (_amount < _local)
+        if (_amount < _local) {
             _amount = _local;
+        }
         return _amount;
     }
 
@@ -554,11 +571,13 @@ contract TBoxManager is TBoxToken {
     function withdrawPercent(uint256 _collateral) external view returns(uint256) {
         uint256 _amount = overCapWithdrawableTmv(_collateral);
         uint256 _maxGlobal = globalWithdrawableTmv(_collateral);
-        if (_amount > _maxGlobal)
+        if (_amount > _maxGlobal) {
             _amount = _maxGlobal;
+        }
         uint256 _local = defaultWithdrawableTmv(_collateral);
-        if (_amount < _local)
+        if (_amount < _local) {
             _amount = _local;
+        }
         return _collateral.mul(rate()).div(_amount);
     }
 }

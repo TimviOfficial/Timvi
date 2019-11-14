@@ -418,8 +418,9 @@ contract BondService {
             return;
         }
 
-        if (_tmv != 0)
+        if (_tmv != 0) {
             _eth = ITBoxManager(settings.logicManager()).withdrawableEth(bonds[_id].tBoxId);
+        }
 
         uint256 _commission = _eth.mul(bonds[_id].sysFee).div(divider);
 
