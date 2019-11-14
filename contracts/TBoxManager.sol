@@ -47,7 +47,7 @@ contract TBoxManager is TBoxToken {
     ///  using withdrawEth method.
     event EthWithdrawn(uint256 indexed id, uint256 value, address who);
 
-    /// @dev The EthWithdrawn event is fired whenever TMV is withdrawn from a Box
+    /// @dev The TmvWithdrawn event is fired whenever TMV is withdrawn from a Box
     ///  using withdrawTmv method.
     event TmvWithdrawn(uint256 indexed id, uint256 value, address who);
 
