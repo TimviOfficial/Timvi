@@ -27,9 +27,6 @@ contract LeverageService {
     // The minimum deposit amount
     uint256 public minEther;
 
-    // The percent of maximum collateral percent for emitting
-    uint256 public safeCollateralPercent;
-
     ISettings public settings;
 
     /// @dev An array containing the Order struct for all Orders in existence. The ID
@@ -58,7 +55,6 @@ contract LeverageService {
     event FeeUpdated(uint256 leverage, uint256 exchange);
     event MinEtherUpdated(uint256 value);
     event Transferred(address from, address to, uint256 id);
-    event SafeCollateralPercentUpdated(uint256 _value);
 
     /// @dev Defends against front-running attacks.
     modifier validTx() {
@@ -104,9 +100,6 @@ contract LeverageService {
 
         minEther = 1 ether;
         emit MinEtherUpdated(minEther);
-
-        safeCollateralPercent = 500 * divider;
-        emit SafeCollateralPercentUpdated(safeCollateralPercent);
     }
 
     /// @dev Withdraws system fee.
@@ -149,14 +142,6 @@ contract LeverageService {
         emit MinEtherUpdated(_value);
     }
 
-    /// @dev Sets maximum collateral percent.
-    /// @param _value The maximum collateral percent.
-    function setSafeCollateralPercent(uint256 _value) external onlyAdmin {
-        require(_value >= 300 * divider && _value <= 800 * divider, "Safe collateral percent out of range");
-        safeCollateralPercent = _value;
-        emit SafeCollateralPercentUpdated(_value);
-    }
-
     /// @dev Sets admin address.
     function changeAdmin(address _newAdmin) external onlyAdmin {
         require(_newAdmin != address(0), "Zero address, be careful");
@@ -167,8 +152,7 @@ contract LeverageService {
     function create(uint256 _percent) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
         require(_percent == 0
-        || (_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value)
-        && _percent <= safeCollateralPercent),
+            || _percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value),
             "Collateral percent out of range"
         );
 
