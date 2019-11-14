@@ -85,6 +85,12 @@ contract BondService {
     event BondEmitterFeeUpdated(uint256 _value);
     event BondMinEtherUpdated(uint256 _value);
 
+    /// @dev Defends against front-running attacks.
+    modifier validTx() {
+        require(tx.gasprice <= settings.gasPriceLimit(), "Gas price is greater than allowed");
+        _;
+    }
+
     /// @dev Access modifier for admin-only functionality.
     modifier onlyAdmin() {
         require(admin == msg.sender, "You have no access");
@@ -290,7 +296,7 @@ contract BondService {
 
     /// @dev Uses to match the emitter request.
     /// @param _id A Bond ID.
-    function takeEmitRequest(uint256 _id) external payable emitRequest(_id) {
+    function takeEmitRequest(uint256 _id) external payable emitRequest(_id) validTx {
 
         address _emitter = bonds[_id].emitter;
         uint256 _eth = bonds[_id].deposit.mul(divider).div(bonds[_id].percent);
@@ -317,7 +323,7 @@ contract BondService {
 
     /// @dev Uses to match the owner request.
     /// @param _id A Bond ID.
-    function takeBuyRequest(uint256 _id) external payable buyRequest(_id) {
+    function takeBuyRequest(uint256 _id) external payable buyRequest(_id) validTx {
 
         address _owner = bonds[_id].owner;
 
@@ -341,7 +347,7 @@ contract BondService {
 
     /// @dev Finishes the bond.
     /// @param _id A Bond ID.
-    function finish(uint256 _id) external onlyEmitter(_id) {
+    function finish(uint256 _id) external onlyEmitter(_id) validTx {
 
         Bond memory bond = bonds[_id];
 
@@ -390,7 +396,7 @@ contract BondService {
 
     /// @dev Executes expiration process of the bond.
     /// @param _id A Bond ID.
-    function expire(uint256 _id) external matched(_id) {
+    function expire(uint256 _id) external matched(_id) validTx {
 
         require(now > bonds[_id].expiration, "Bond hasn't expired");
 

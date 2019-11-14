@@ -59,6 +59,12 @@ contract TBoxManager is TBoxToken {
     ///  using addTmv method.
     event TmvAdded(uint256 indexed id, uint256 value, address who);
 
+    /// @dev Defends against front-running attacks.
+    modifier validTx() {
+        require(tx.gasprice <= settings.gasPriceLimit(), "Gas price is greater than allowed");
+        _;
+    }
+
     /// @dev Throws if called by any account other than the owner.
     modifier onlyAdmin() {
         require(settings.isFeeManager(msg.sender), "You have no access");
@@ -109,7 +115,7 @@ contract TBoxManager is TBoxToken {
     ///  for provided Ether collateral and creates new Box
     /// @param _tokensToWithdraw Number of tokens to withdraw
     /// @return New Box ID.
-    function create(uint256 _tokensToWithdraw) public payable returns (uint256) {
+    function create(uint256 _tokensToWithdraw) public payable validTx returns (uint256) {
         // Check that msg.value isn't smaller than minimum deposit
         require(msg.value >= settings.minDeposit(), "Deposit is very small");
 
@@ -197,7 +203,7 @@ contract TBoxManager is TBoxToken {
     /// @dev Allows the user to capitalize a Box with specified number of tokens.
     /// @param _id A Box ID to capitalize.
     /// @param _tmv Specified number of tokens to capitalize.
-    function capitalize(uint256 _id, uint256 _tmv) public {
+    function capitalize(uint256 _id, uint256 _tmv) public validTx {
 
         // The maximum number of tokens for which Box can be capitalized
         uint256 _maxCapAmount = maxCapAmount(_id);
@@ -246,7 +252,7 @@ contract TBoxManager is TBoxToken {
     ///  of Ether from the Box.
     /// @param _id A Box ID.
     /// @param _amount The number of Ether to withdraw.
-    function withdrawEth(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) {
+    function withdrawEth(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) validTx {
         require(_amount > 0, "Withdrawing zero doesn't help you buy lamba");
 
         require(_amount <= withdrawableEth(_id), "You can't withdraw so much");
@@ -276,7 +282,7 @@ contract TBoxManager is TBoxToken {
     ///  of TMV tokens from the Box.
     /// @param _id A Box ID.
     /// @param _amount The number of tokens to withdraw.
-    function withdrawTmv(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) {
+    function withdrawTmv(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) validTx {
         require(_amount > 0, "Withdrawing zero doesn't help you buy lamba");
 
         // Check the number of tokens
@@ -327,7 +333,7 @@ contract TBoxManager is TBoxToken {
     /// @dev Allows anyone to close Box with collateral amount smaller than 3 USD.
     ///  The person who made closing happen will benefit like capitalization.
     /// @param _id A Box ID.
-    function closeDust(uint256 _id) external onlyExists(_id) {
+    function closeDust(uint256 _id) external onlyExists(_id) validTx {
         // Check collateral percent of the Box
         require(collateralPercent(_id) >= settings.minStability(), "This Box isn't collapsable");
 

@@ -72,6 +72,12 @@ contract Gate {
         _;
     }
 
+    /// @dev Defends against front-running attacks.
+    modifier validTx() {
+        require(tx.gasprice <= settings.gasPriceLimit(), "Gas price is greater than allowed");
+        _;
+    }
+
     /// @notice ISettings address couldn't be changed later.
     /// @dev The contract constructor sets the original `admin` of the contract to the sender
     //   account and sets the settings contract with provided address.
@@ -142,7 +148,7 @@ contract Gate {
         emit AdminChanged(msg.sender);
     }
 
-    function convert(uint256 _amount) external {
+    function convert(uint256 _amount) external validTx {
         require(_amount >= minOrder, "Too small amount");
         uint256 eth = tmv2eth(_amount);
         if (address(this).balance >= eth) {
@@ -192,7 +198,7 @@ contract Gate {
     }
 
     /// @dev Fills an Order by id.
-    function fill(uint256 _id) external payable {
+    function fill(uint256 _id) external payable validTx {
         require(orders[_id].owner != address(0), "Order doesn't exist");
 
         // Retrieve values from storage

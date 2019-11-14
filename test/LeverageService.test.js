@@ -107,6 +107,9 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
             await this.service.create(percent, { from: owner,value: deposit});
         });
 
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it("reverts non-existent order", async function () {
             await this.service.create(percent, { from: owner,value: deposit});
             let orderId = 1;
@@ -192,6 +195,9 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
             await this.service.create(0, { from: owner, value: deposit});
         });
 
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it("reverts non-existent order", async function () {
             rate = await this.logic.rate();
             divider = new BN('100000');

@@ -364,6 +364,9 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
         });
 
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it("reverts non-existent bid", async function () {
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
             let bondId = 1;
@@ -446,7 +449,10 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             await this.service.exchange(expiration, yearFee, { from: owner,value: deposit});
         });
 
-        it("reverts non-existent bid", async function () {
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
+        it("reverts non-existent order", async function () {
             await this.service.exchange(expiration, yearFee, { from: owner, value: deposit});
             let bondId = 1;
             await this.service.close(bondId, { from: owner});
@@ -530,6 +536,9 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             await this.token.approve(this.service.address, constants.MAX_INT256, {from: emitter});
         });
 
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.finish(bondId, {from: emitter, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it("reverts finishing from alien", async function () {
             await expectRevert(this.service.finish(bondId, {from: anotherAccount}), 'You are not the emitter');
         });
@@ -689,6 +698,9 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             await time.increase(expiration.add(new BN(1)));
         });
 
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.service.expire(bondId, {from: emitter, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it("reverts not expired bond", async function () {
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
             let bondId = 1;

@@ -60,6 +60,12 @@ contract LeverageService {
     event Transferred(address from, address to, uint256 id);
     event SafeCollateralPercentUpdated(uint256 _value);
 
+    /// @dev Defends against front-running attacks.
+    modifier validTx() {
+        require(tx.gasprice <= settings.gasPriceLimit(), "Gas price is greater than allowed");
+        _;
+    }
+
     /// @dev Access modifier for admin-only functionality.
     modifier onlyAdmin() {
         require(admin == msg.sender, "You have no access");
@@ -181,7 +187,7 @@ contract LeverageService {
     }
 
     /// @dev Uses to match a leverage Order.
-    function takeLeverageOrder(uint256 _id) external payable ensureLeverageOrder(_id) {
+    function takeLeverageOrder(uint256 _id) external payable ensureLeverageOrder(_id) validTx {
         address _owner = orders[_id].owner;
         uint256 _eth = orders[_id].pack.mul(divider).div(orders[_id].percent);
 
@@ -208,7 +214,7 @@ contract LeverageService {
     }
 
     /// @dev Uses to match an exchange Order.
-    function takeExchangeOrder(uint256 _id) external payable ensureExchnageOrder(_id) returns(uint256) {
+    function takeExchangeOrder(uint256 _id) external payable ensureExchnageOrder(_id) validTx returns(uint256) {
         address _owner = orders[_id].owner;
         uint256 _eth = orders[_id].pack;
         uint256 _sysEth = _eth.mul(feeExchange).div(divider);

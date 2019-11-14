@@ -29,6 +29,9 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
     describe('Creating', function () {
         let deposit = ether("1");
         let released = ether("1");
+        it('reverts on front-running attack attempt', async function () {
+            await expectRevert(this.logic.create(released, { from: owner, value: deposit, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+        });
         it('reverts when token amount more than available', async function () {
             let targetCollaterization = '150000';
             let price = await this.logic.rate.call();
@@ -178,6 +181,9 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
         });
 
         describe('reverts', function () {
+            it('reverts on front-running attack attempt', async function () {
+                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+            });
             it("if TBox doesn't exist", async function () {
                 await expectRevert(this.logic.capitalize(100, capitalization, {from: owner}), 'Box does not exist');
             });
@@ -281,6 +287,9 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
         });
 
         describe('reverts', function () {
+            it('reverts on front-running attack attempt', async function () {
+                await expectRevert(this.logic.withdrawEth(0, withdraw, {from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+            });
             it("withdrawing zero", async function () {
                 await expectRevert(this.logic.withdrawEth(0, 0, {from: owner}), "Withdrawing zero doesn't help you buy lamba");
             });
@@ -343,6 +352,9 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
         });
 
         describe('reverts', function () {
+            it('reverts on front-running attack attempt', async function () {
+                await expectRevert(this.logic.withdrawTmv(0, withdraw, {from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+            });
             it("withdrawing zero", async function () {
                 await expectRevert(this.logic.withdrawTmv(0, 0, {from: owner}), "Withdrawing zero doesn't help you buy lamba");
             });
@@ -633,6 +645,9 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
         });
 
         describe('reverts', function () {
+            it('reverts on front-running attack attempt', async function () {
+                await expectRevert(this.logic.closeDust(0, { gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+            });
             it('when collateral percent is less than min', async function () {
                 await this.oracle.setPrice(70000);
                 await expectRevert(this.logic.closeDust(0), 'This Box isn\'t collapsable');
