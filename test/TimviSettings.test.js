@@ -116,6 +116,17 @@ contract('TimviSettings', function ([]) {
             expect(res).to.be.bignumber.equal(value);
         });
     });
-});
 
-// Timvi Settings Ropsten 0x4a2e3883d5f574178660998b05fc7211f5b2960e
+    describe('Gas price limit', function () {
+        it('reverts when the value out of range', async function () {
+            let value = new BN(4000000000); // 4 GWei
+            await expectRevert(this.settings.setGasPriceLimit(value), 'Gas price limit must be greater than 5 GWei');
+        });
+        it('sets the correct value', async function () {
+            let value = new BN(10000000000); //10 GWei
+            await this.settings.setGasPriceLimit(value);
+            let res = await this.settings.gasPriceLimit();
+            expect(res).to.be.bignumber.equal(value);
+        });
+    });
+});

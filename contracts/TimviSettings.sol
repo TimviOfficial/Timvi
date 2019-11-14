@@ -11,11 +11,14 @@ contract TimviSettings is ManagerRole {
     event UserFeeUpdated(uint256 _value);
     event TotalFeeUpdated(uint256 _value);
     event GlobalSafetyBagUpdated(uint256 _value);
+    event GasPriceLimitUpdated(uint256 _value);
 
     uint256 public minDeposit;
     uint256 public sysFee;
     uint256 public userFee;
     uint256 constant public COMM_DIVIDER = 100000;
+
+    uint256 public gasPriceLimit;
 
     uint256 public globalSafetyBag;
 
@@ -29,12 +32,14 @@ contract TimviSettings is ManagerRole {
         userFee = 3000; // 3%
         globalSafetyBag = 34783; // 34,783%
         totalFee = 6000; //6%
+        gasPriceLimit = 0.02 szabo; // 20 GWei
 
         emit MinDepositUpdated(minDeposit);
         emit SysFeeUpdated(sysFee);
         emit UserFeeUpdated(userFee);
         emit TotalFeeUpdated(totalFee);
         emit GlobalSafetyBagUpdated(globalSafetyBag);
+        emit GasPriceLimitUpdated(gasPriceLimit);
     }
 
     function setMinDepo(uint256 _value) external onlyFeeManager {
@@ -65,6 +70,12 @@ contract TimviSettings is ManagerRole {
     function setOracleAddress(address _addr) external onlyFeeManager {
         require(_addr != address(0), "Zero address");
         oracleAddress = _addr;
+    }
+
+    function setGasPriceLimit(uint256 _limit) external onlyFeeManager {
+        require(_limit > 0.005 szabo, "Gas price limit must be greater than 5 GWei");
+        gasPriceLimit = _limit;
+        emit GasPriceLimitUpdated(gasPriceLimit);
     }
 
     function setSafetyBag(uint256 _bag) external onlyFeeManager {

@@ -13,6 +13,7 @@ interface ISettings {
     function tmvAddress() external view returns(uint256);
     function maxStability() external view returns(uint256);
     function minStability() external view returns(uint256);
+    function gasPriceLimit() external view returns(uint256);
     function isFeeManager(address account) external view returns (bool);
     function logicManager() external view returns(address);
 }
