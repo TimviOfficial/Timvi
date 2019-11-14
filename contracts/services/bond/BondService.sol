@@ -15,7 +15,7 @@ contract BondService {
     address public admin;
 
     // The amount of Ether received from the commissions of the system.
-    uint256 systemETH;
+    uint256 private systemETH;
 
     // Commission percentage charged from the emitter
     uint256 public emitterFee;
