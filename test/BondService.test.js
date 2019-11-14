@@ -11,7 +11,7 @@ const Token = artifacts.require('TimviToken');
 const Oracle = artifacts.require('OracleContractMock');
 const BondService = artifacts.require('BondService');
 
-contract('BondService', function ([_, emitter, owner, anotherAccount]) {
+contract('BondService', function ([_, emitter, holder, anotherAccount]) {
 
     // deploy & initial settings
     beforeEach(async function () {
@@ -163,40 +163,40 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             it('when deposit is very small', async function () {
                 let newDeposit = ether("1").div(new BN(20));
 
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Too small funds");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Too small funds");
             });
             it("when deposit isn't matched", async function () {
                 let deltaDeposit = ether("1").div(new BN(2));
 
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit.sub(new BN(1))}), "Incorrect value");
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit.add(new BN(1))}), "Incorrect value");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit.sub(new BN(1))}), "Incorrect value");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit.add(new BN(1))}), "Incorrect value");
             });
             it('when specified percent is higher than available', async function () {
                 let percent = 115900;
 
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Collateralization is not enough");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Collateralization is not enough");
             });
             it('when year fee is higher than 10%', async function () {
                 let yearFee = new BN('10001');
 
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Fee out of range");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Fee out of range");
             });
             it('when expiration out of range', async function () {
                 let expiration1 = new BN(24 * 60 * 60 - 1);
                 let expiration2 = new BN(365 * 24 * 60 * 60 + 1);
 
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration1, yearFee, { from: emitter, value: deltaDeposit}), "Expiration out of range");
-                await expectRevert(this.service.changeEmitter(bondId, newDeposit, percent, expiration2, yearFee, { from: emitter, value: deltaDeposit}), "Expiration out of range");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration1, yearFee, { from: emitter, value: deltaDeposit}), "Expiration out of range");
+                await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration2, yearFee, { from: emitter, value: deltaDeposit}), "Expiration out of range");
             });
-            it('changes by non-owner', async function () {
-                await this.service.exchange(expiration, yearFee, { from: owner,value: deposit});
+            it('changes by non-holder', async function () {
+                await this.service.exchange(expiration, yearFee, { from: holder,value: deposit});
                 let bondId = new BN(1);
-                await expectRevert(this.service.changeOwner(bondId, newDeposit, expiration, yearFee, { from: anotherAccount, value: deltaDeposit}), 'You are not the owner');
+                await expectRevert(this.service.holderChange(bondId, newDeposit, expiration, yearFee, { from: anotherAccount, value: deltaDeposit}), 'You are not the holder');
             });
         });
         describe('success', function () {
             it('updates record about the Bond', async function () {
-                await this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit});
+                await this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit});
                 let bond = await this.service.bonds(0);
                 expect(bond[0]).to.have.string(emitter);
                 expect(bond[1]).to.have.string(ZERO_ADDRESS);
@@ -213,7 +213,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 let percent = new BN('150232');
                 let yearFee = new BN(10000);
                 let expiration = new BN(60*24*60*60);
-                await this.service.changeEmitter(bondId, deposit, percent, expiration, yearFee, { from: emitter});
+                await this.service.emitterChange(bondId, deposit, percent, expiration, yearFee, { from: emitter});
                 let bond = await this.service.bonds(0);
                 expect(bond[0]).to.have.string(emitter);
                 expect(bond[1]).to.have.string(ZERO_ADDRESS);
@@ -231,25 +231,25 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 let newDeposit = ether("1");
                 await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
                 let bondId = 1;
-                let tx = this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter});
+                let tx = this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter});
                 let diff = await balance.differenceExcludeGas(emitter, tx, this.gasPrice);
                 expect(diff).to.be.bignumber.equal(deltaDeposit);
             });
-            it('changes by owner', async function () {
-                await this.service.exchange(expiration, yearFee, { from: owner,value: deposit});
+            it('changes by holder', async function () {
+                await this.service.exchange(expiration, yearFee, { from: holder,value: deposit});
                 let bondId = new BN(1);
-                await this.service.changeOwner(bondId, newDeposit, expiration, yearFee, { from: owner, value: deltaDeposit});
+                await this.service.holderChange(bondId, newDeposit, expiration, yearFee, { from: holder, value: deltaDeposit});
             });
             it('increases the contract balance', async function () {
-                let tx = this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, {from: emitter,  value: deposit});
+                let tx = this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, {from: emitter,  value: deposit});
                 expect((await balance.difference(this.service.address, tx))).to.be.bignumber.equal(deltaDeposit);
             });
             it('reduces the user balance', async function () {
-                let tx = this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, {from: emitter,  value: deposit});
+                let tx = this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, {from: emitter,  value: deposit});
                 expect((await balance.differenceExcludeGas(emitter, tx, this.gasPrice))).to.be.bignumber.equal(deltaDeposit);
             });
             it('emits a change event', async function () {
-                const { logs } = await this.service.changeEmitter(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deposit });
+                const { logs } = await this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deposit });
                 expectEvent.inLogs(logs, 'BondChanged', {
                     id: new BN(0),
                     deposit: newDeposit,
@@ -273,7 +273,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         });
 
         it("reverts closing by alien", async function () {
-            await expectRevert(this.service.close(new BN(0), {from: owner}), 'You are not the single owner');
+            await expectRevert(this.service.close(new BN(0), {from: anotherAccount}), 'You are not the single owner');
         });
         it("removes a record about Bond", async function () {
             await this.service.close(bondId, {from: emitter});
@@ -317,7 +317,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         });
 
         it("reverts closing by alien", async function () {
-            await expectRevert(this.service.close(new BN(0), {from: owner}), 'You are not the single owner');
+            await expectRevert(this.service.close(new BN(0), {from: anotherAccount}), 'You are not the single owner');
         });
         it("removes a record about Bond", async function () {
             await this.service.close(bondId, {from: emitter});
@@ -365,58 +365,58 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         });
 
         it('reverts on front-running attack attempt', async function () {
-            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
         });
         it("reverts non-existent bid", async function () {
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
             let bondId = 1;
             await this.service.close(bondId, { from: emitter});
 
-            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner}), 'The bond isn\'t an emit request');
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder}), 'The bond isn\'t an emit request');
         });
         it("returns when attached value isn't expected", async function () {
-            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo.add(new BN(1)),from: owner}), 'Incorrect ETH value');
-            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo.sub(new BN(1)),from: owner}), 'Incorrect ETH value');
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo.add(new BN(1)),from: holder}), 'Incorrect ETH value');
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo.sub(new BN(1)),from: holder}), 'Incorrect ETH value');
         });
         it("returns when the percentage has become impossible", async function () {
             await this.logic.withdrawTmvMax(new BN(0), {from: emitter});
 
 
 
-            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner}), 'Token amount is more than available'); //reverts in ClassicCapitalized
+            await expectRevert(this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder}), 'Token amount is more than available'); //reverts in ClassicCapitalized
 
         });
         it("mints 721 token to service contract", async function () {
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             let tBoxId = new BN(1);
             let apprOrOwnr = await this.logic.isApprovedOrOwner.call(this.service.address, tBoxId);
 
             expect(apprOrOwnr).to.be.true;
         });
         it("transfers mathcing ETH to emitter", async function () {
-            let tx = this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            let tx = this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             let diff = await balance.difference(emitter, tx);
             let fee = matchDepo.mul(new BN(5)).div(new BN(1000)); //0.5%
 
             expect(diff).to.be.bignumber.equal(matchDepo.sub(fee));
         });
         it("mints TMV equivalent to matcher", async function () {
-            let balanceBefore = await this.token.balanceOf(owner);
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            let balanceBefore = await this.token.balanceOf(holder);
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             let rate = new BN(10000000);
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
-            let balanceAfter= await this.token.balanceOf(owner);
+            let balanceAfter= await this.token.balanceOf(holder);
 
             expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(tmv);
         });
         it("updates record about matched bond", async function () {
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             let timestamp = await time.latest();
             let bond = await this.service.bonds(bondId);
 
             expect(bond[0]).to.have.string(emitter);
-            expect(bond[1]).to.have.string(owner);
+            expect(bond[1]).to.have.string(holder);
             expect(bond[2]).to.be.bignumber.equal(deposit);
             expect(bond[3]).to.be.bignumber.equal(percent);
             expect(bond[4]).to.be.bignumber.equal(tmv);
@@ -427,7 +427,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             expect(bond[9]).to.be.bignumber.equal(timestamp);
         });
         it("emits the matching event", async function () {
-            let {logs} = await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            let {logs} = await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
 
             expectEvent.inLogs(logs, 'BondMatched', {
                 id: new BN(0),
@@ -445,17 +445,17 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         let tmv;
 
         beforeEach(async function () {
-            await this.logic.create(1, { from: owner, value: deposit.mul(new BN(10)) });
-            await this.service.exchange(expiration, yearFee, { from: owner,value: deposit});
+            await this.logic.create(1, { from: holder, value: deposit.mul(new BN(10)) });
+            await this.service.exchange(expiration, yearFee, { from: holder,value: deposit});
         });
 
         it('reverts on front-running attack attempt', async function () {
             await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
         });
         it("reverts non-existent order", async function () {
-            await this.service.exchange(expiration, yearFee, { from: owner, value: deposit});
+            await this.service.exchange(expiration, yearFee, { from: holder, value: deposit});
             let bondId = 1;
-            await this.service.close(bondId, { from: owner});
+            await this.service.close(bondId, { from: holder});
 
             await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter}), 'The bond isn\'t an buy request');
         });
@@ -477,13 +477,13 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
 
             expect(diff).to.be.bignumber.equal(calculatedDiff);
         });
-        it("mints TMV equivalent to owner", async function () {
-            let balanceBefore = await this.token.balanceOf(owner);
+        it("mints TMV equivalent to holder", async function () {
+            let balanceBefore = await this.token.balanceOf(holder);
             await this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter});
             let rate = new BN(10000000);
             let precision = new BN(100000);
             tmv = deposit.mul(rate).div(precision);
-            let balanceAfter= await this.token.balanceOf(owner);
+            let balanceAfter= await this.token.balanceOf(holder);
 
             expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(tmv);
         });
@@ -493,7 +493,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             let bond = await this.service.bonds(bondId);
 
             expect(bond[0]).to.have.string(emitter);
-            expect(bond[1]).to.have.string(owner);
+            expect(bond[1]).to.have.string(holder);
             expect(bond[2]).to.be.bignumber.equal(deposit);
             expect(bond[3]).to.be.bignumber.equal(new BN(0));
             expect(bond[4]).to.be.bignumber.equal(tmv);
@@ -528,9 +528,9 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
             await this.service.leverage(percent, expiration, yearFee, { from: emitter, value: deposit });
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner });
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder });
             createdAt = await time.latest();
-            await this.token.transfer(emitter, tmv, {from: owner});
+            await this.token.transfer(emitter, tmv, {from: holder});
             await this.logic.create(1000, {from: emitter, value: deposit.mul(new BN(10))});
             await this.logic.withdrawTmvMax(1, {from: emitter});
             await this.token.approve(this.service.address, constants.MAX_INT256, {from: emitter});
@@ -593,12 +593,12 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             expect(tBox[1]).to.be.bignumber.equal(new BN(0));
         });
         it("0 commission", async function () {
-            await this.service.setOwnerFee(0);
+            await this.service.setHolderFee(0);
             let bondId = 1;
 
 
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
 
             await this.logic.addTmv(2, tmv, {from: emitter});
 
@@ -659,11 +659,11 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
 
             expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(sysCom);
         });
-        it("sends year fee to owner", async function () {
+        it("sends year fee to holder", async function () {
 
             await time.increase(expiration.div(new BN(2)));
 
-            let balanceBefore = await this.token.balanceOf(owner);
+            let balanceBefore = await this.token.balanceOf(holder);
 
             await this.service.finish(bondId, {from: emitter});
 
@@ -673,7 +673,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             commission = tmv.mul(secondsPast).mul(yearFee).div(year).div(divivder);
             sysCom = commission.mul(new BN('10000')).div(divivder);
 
-            let balanceAfter = await this.token.balanceOf(owner);
+            let balanceAfter = await this.token.balanceOf(holder);
 
             expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(commission.sub(sysCom));
         });
@@ -693,7 +693,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             createdAt = await time.latest();
             await time.increase(expiration.add(new BN(1)));
         });
@@ -704,7 +704,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         it("reverts not expired bond", async function () {
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
             let bondId = 1;
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
 
             await expectRevert(this.service.expire(bondId, {from: anotherAccount}), 'Bond hasn\'t expired');
         });
@@ -739,7 +739,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             expect(bond[8]).to.be.bignumber.equal(new BN(0));
             expect(bond[9]).to.be.bignumber.equal(new BN(0));
         });
-        it("transfers TBox ownership to Bond owner", async function () {
+        it("transfers TBox ownership to Bond holder", async function () {
 
             let tBox = await this.logic.boxes(0);
 
@@ -755,7 +755,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         it("0-TMV TBox", async function () {
             await this.service.expire(bondId, {from: emitter});
 
-            let apprOrOwnr = await this.logic.isApprovedOrOwner.call(owner, 0);
+            let apprOrOwnr = await this.logic.isApprovedOrOwner.call(holder, 0);
 
             expect(apprOrOwnr).to.be.true;
         });
@@ -783,12 +783,12 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
         });
         it("expiration with 0 commission", async function () {
 
-            await this.service.setOwnerFee(0);
+            await this.service.setHolderFee(0);
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
             let bondId = new BN(1);
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             await time.increase(expiration.add(new BN(1)));
-            await this.service.expire(bondId, {from: owner});
+            await this.service.expire(bondId, {from: holder});
         });
         it("commission stays on the contract and reduces TBox deposit", async function () {
             // let eth = new BN('32212966363220525');
@@ -813,7 +813,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
 
         beforeEach(async function () {
             await this.service.leverage(percent, expiration, yearFee, {from: emitter, value: deposit});
-            await this.service.takeEmitRequest(bidId, {from: owner, value: matchDepo});
+            await this.service.takeEmitRequest(bidId, {from: holder, value: matchDepo});
         });
 
         describe('reverts', function () {
@@ -822,22 +822,22 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 await expectRevert(this.service.withdrawSystemETH(ZERO_ADDRESS), 'Zero address, be careful');
             });
             it("withdrawing by non-admin", async function () {
-                await expectRevert(this.service.withdrawSystemETH(owner, {from: owner}), 'You have no access');
+                await expectRevert(this.service.withdrawSystemETH(holder, {from: holder}), 'You have no access');
             });
             it("when there are no fees nor rewards", async function () {
-                await this.service.withdrawSystemETH(owner);
-                await expectRevert(this.service.withdrawSystemETH(owner), 'There is no available ETH');
+                await this.service.withdrawSystemETH(holder);
+                await expectRevert(this.service.withdrawSystemETH(holder), 'There is no available ETH');
             });
         });
         describe('success', function () {
             it("zeroes fee counter", async function () {
-                await this.service.withdrawSystemETH(owner);
+                await this.service.withdrawSystemETH(holder);
             });
             it("reduces the contract balance", async function () {
-                this.service.withdrawSystemETH(owner);
+                this.service.withdrawSystemETH(holder);
             });
             it("increases the user balance", async function () {
-                this.service.withdrawSystemETH(owner);
+                this.service.withdrawSystemETH(holder);
             });
         });
     });
@@ -856,9 +856,9 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
             await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
-            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: owner});
+            await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             createdAt = await time.latest();
-            await this.token.transfer(emitter, tmv, {from: owner});
+            await this.token.transfer(emitter, tmv, {from: holder});
             await this.token.approve(this.service.address, constants.MAX_INT256, {from: emitter});
             await this.logic.create(0, {from: emitter, value: deposit});
             await this.logic.withdrawTmvMax(1, {from: emitter});
@@ -897,6 +897,74 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             });
         });
     });
+    describe('Order transferring', function () {
+
+        let deposit = ether("1");
+        let percent = new BN(151000);
+        let emitterOrderId = new BN(0);
+        let holderOrderId = new BN(1);
+        let yearFee = new BN('10000');
+        let expiration = new BN(30*24*60*60);
+
+        beforeEach(async function () {
+            await this.service.leverage(percent, expiration, yearFee, {from: emitter, value: deposit});
+            await this.service.exchange(expiration, yearFee, {from: holder, value: deposit});
+        });
+
+        describe('emitter rights', function () {
+            describe('reverts', function () {
+
+                it("to zero address", async function () {
+                    await expectRevert(this.service.transferEmitterRights(ZERO_ADDRESS, emitterOrderId, {from: emitter}), 'Zero address, be careful');
+                });
+                it("by non-owner", async function () {
+                    await expectRevert(this.service.transferEmitterRights(anotherAccount, emitterOrderId, {from: anotherAccount}), 'You are not the emitter');
+                });
+            });
+            describe('success', function () {
+                it("emits an event", async function () {
+                    let {logs} = await this.service.transferEmitterRights(anotherAccount, emitterOrderId, {from: emitter});
+                    expectEvent.inLogs(logs, 'EmitterRightsTransferred', {
+                        from: emitter,
+                        to: anotherAccount,
+                        id: emitterOrderId,
+                    });
+                });
+                it("changes storage value", async function () {
+                    await this.service.transferEmitterRights(anotherAccount, emitterOrderId, {from: emitter});
+                    let order = await this.service.bonds(emitterOrderId);
+                    expect(order.emitter).to.equal(anotherAccount);
+                });
+            });
+        });
+
+        describe('holder rights', function () {
+            describe('reverts', function () {
+
+                it("to zero address", async function () {
+                    await expectRevert(this.service.transferHolderRights(ZERO_ADDRESS, holderOrderId, {from: holder}), 'Zero address, be careful');
+                });
+                it("by non-owner", async function () {
+                    await expectRevert(this.service.transferHolderRights(anotherAccount, holderOrderId, {from: anotherAccount}), 'You are not the holder');
+                });
+            });
+            describe('success', function () {
+                it("emits an event", async function () {
+                    let {logs} = await this.service.transferHolderRights(anotherAccount, holderOrderId, {from: holder});
+                    expectEvent.inLogs(logs, 'HolderRightsTransferred', {
+                        from: holder,
+                        to: anotherAccount,
+                        id: holderOrderId,
+                    });
+                });
+                it("changes storage value", async function () {
+                    await this.service.transferHolderRights(anotherAccount, holderOrderId, {from: holder});
+                    let order = await this.service.bonds(holderOrderId);
+                    expect(order.holder).to.equal(anotherAccount);
+                });
+            });
+        });
+    });
     describe('Settings the emitter commission', function () {
         let commission = new BN(10000);
         describe('reverts', function () {
@@ -905,7 +973,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 await expectRevert(this.service.setEmitterFee(commission.add(new BN(1))), 'Too much');
             });
             it("setting by non-admin", async function () {
-                await expectRevert(this.service.setEmitterFee(commission, {from: owner}), 'You have no access');
+                await expectRevert(this.service.setEmitterFee(commission, {from: holder}), 'You have no access');
             });
         });
         describe('success', function () {
@@ -916,21 +984,21 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
             });
         });
     });
-    describe('Settings the owner commission', function () {
+    describe('Settings the holder commission', function () {
         let commission = new BN(50000);
         describe('reverts', function () {
 
             it("if setting value is higher than 10%", async function () {
-                await expectRevert(this.service.setOwnerFee(commission.add(new BN(1))), 'Too much');
+                await expectRevert(this.service.setHolderFee(commission.add(new BN(1))), 'Too much');
             });
             it("setting by non-admin", async function () {
-                await expectRevert(this.service.setOwnerFee(commission, {from: owner}), 'You have no access');
+                await expectRevert(this.service.setHolderFee(commission, {from: holder}), 'You have no access');
             });
         });
         describe('success', function () {
             it("changes the commission", async function () {
-                await this.service.setOwnerFee(commission);
-                let newCom = await this.service.ownerFee();
+                await this.service.setHolderFee(commission);
+                let newCom = await this.service.holderFee();
                 expect(newCom).to.be.bignumber.equal(commission);
             });
         });
@@ -944,7 +1012,7 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 await expectRevert(this.service.setMinEther(value.add(new BN(1))), 'Too much');
             });
             it("setting by non-admin", async function () {
-                await expectRevert(this.service.setMinEther(value, {from: owner}), 'You have no access');
+                await expectRevert(this.service.setMinEther(value, {from: holder}), 'You have no access');
             });
         });
         describe('success', function () {
@@ -963,14 +1031,14 @@ contract('BondService', function ([_, emitter, owner, anotherAccount]) {
                 await expectRevert(this.service.changeAdmin(ZERO_ADDRESS), 'Zero address, be careful');
             });
             it("setting by non-admin", async function () {
-                await expectRevert(this.service.changeAdmin(owner, {from: owner}), 'You have no access');
+                await expectRevert(this.service.changeAdmin(holder, {from: holder}), 'You have no access');
             });
         });
         describe('success', function () {
             it("changes the admin address", async function () {
-                await this.service.changeAdmin(owner);
+                await this.service.changeAdmin(holder);
                 let newAdmin = await this.service.admin();
-                expect(newAdmin).to.have.string(owner);
+                expect(newAdmin).to.have.string(holder);
             });
         });
     });

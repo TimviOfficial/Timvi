@@ -356,6 +356,41 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
             });
         });
     });
+    describe('Order transferring', function () {
+
+        let deposit = ether("1");
+        let percent = new BN(151000);
+        let orderId = new BN(0);
+
+        beforeEach(async function () {
+            await this.service.create(percent, {from: owner, value: deposit});
+        });
+
+        describe('reverts', function () {
+
+            it("to zero address", async function () {
+                await expectRevert(this.service.transfer(ZERO_ADDRESS, orderId, {from: owner}), 'Zero address, be careful');
+            });
+            it("by non-owner", async function () {
+                await expectRevert(this.service.transfer(anotherAccount, orderId, {from: anotherAccount}), 'Order isn\'t your');
+            });
+        });
+        describe('success', function () {
+            it("emits an event", async function () {
+                let {logs} = await this.service.transfer(anotherAccount, orderId, {from: owner});
+                expectEvent.inLogs(logs, 'Transferred', {
+                    from: owner,
+                    to: anotherAccount,
+                    id: orderId,
+                });
+            });
+            it("changes storage value", async function () {
+                await this.service.transfer(anotherAccount, orderId, {from: owner});
+                let order = await this.service.orders(orderId);
+                expect(order.owner).to.equal(anotherAccount);
+            });
+        });
+    });
     describe('Settings the commission', function () {
         let leverageFee = new BN(10000);
         let exchangeFee = new BN(10000);

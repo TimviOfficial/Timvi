@@ -20,8 +20,8 @@ contract BondService {
     // Commission percentage charged from the emitter
     uint256 public emitterFee;
 
-    // Commission percentage charged from the owner
-    uint256 public ownerFee;
+    // Commission percentage charged from the holder
+    uint256 public holderFee;
 
     // The percentage divider
     uint256 public divider = 100000;
@@ -41,17 +41,17 @@ contract BondService {
     struct Bond {
         // The address of the emitter of the Bond
         address emitter;
-        // The address of the owner of the Bond
-        address         owner;
+        // The address of the holder of the Bond
+        address         holder;
         // The Ether amount packed in the Bond
         uint256         deposit;
         // The collateral percentage
         uint256         percent;
-        // The number of TMV tokens withdrawn to owner
+        // The number of TMV tokens withdrawn to holder
         uint256         tmv;
         // The expiration time in seconds
         uint256         expiration;
-        // The percentage of the owner commission fee
+        // The percentage of the holder commission fee
         uint256         yearFee;
         // The percentage of the system commission fee
         uint256         sysFee;
@@ -76,14 +76,16 @@ contract BondService {
     event BondMatched(uint256 id, address who, uint256 tBox, uint256 tmv, uint256 sysFee, address counteragent);
 
     /// @dev The BondFinished event is fired whenever a Bond is finished.
-    event BondFinished(uint256 id, address emitter, address owner);
+    event BondFinished(uint256 id, address emitter, address holder);
 
     /// @dev The BondExpired event is fired whenever a Bond is expired.
-    event BondExpired(uint256 id, address emitter, address owner);
+    event BondExpired(uint256 id, address emitter, address holder);
 
-    event BondOwnerFeeUpdated(uint256 _value);
+    event BondHolderFeeUpdated(uint256 _value);
     event BondEmitterFeeUpdated(uint256 _value);
     event BondMinEtherUpdated(uint256 _value);
+    event EmitterRightsTransferred(address indexed from, address indexed to, uint id);
+    event HolderRightsTransferred(address indexed from, address indexed to, uint id);
 
     /// @dev Defends against front-running attacks.
     modifier validTx() {
@@ -104,11 +106,18 @@ contract BondService {
         _;
     }
 
-    /// @dev Access modifier for single owner-only functionality.
+    /// @dev Access modifier for emitter-only functionality.
+    /// @param _id A Bond ID.
+    modifier onlyHolder(uint256 _id) {
+        require(bonds[_id].holder == msg.sender, "You are not the holder");
+        _;
+    }
+
+    /// @dev Access modifier for single-owner-only functionality.
     /// @param _id A Bond ID.
     modifier singleOwner(uint256 _id) {
-        bool _a = bonds[_id].emitter == msg.sender && bonds[_id].owner == address(0);
-        bool _b = bonds[_id].owner == msg.sender && bonds[_id].emitter == address(0);
+        bool _a = bonds[_id].emitter == msg.sender && bonds[_id].holder == address(0);
+        bool _b = bonds[_id].holder == msg.sender && bonds[_id].emitter == address(0);
         require(_a || _b, "You are not the single owner");
         _;
     }
@@ -116,21 +125,21 @@ contract BondService {
     /// @dev Modifier to allow actions only when the bond is emitter's request
     /// @param _id A Bond ID.
     modifier emitRequest(uint256 _id) {
-        require(bonds[_id].emitter != address(0) && bonds[_id].owner == address(0), "The bond isn't an emit request");
+        require(bonds[_id].emitter != address(0) && bonds[_id].holder == address(0), "The bond isn't an emit request");
         _;
     }
 
-    /// @dev Modifier to allow actions only when the bond is owner's request
+    /// @dev Modifier to allow actions only when the bond is holder's request
     /// @param _id A Bond ID.
     modifier buyRequest(uint256 _id) {
-        require(bonds[_id].owner != address(0) && bonds[_id].emitter == address(0), "The bond isn't an buy request");
+        require(bonds[_id].holder != address(0) && bonds[_id].emitter == address(0), "The bond isn't an buy request");
         _;
     }
 
     /// @dev Modifier to allow actions only when the bond is mathced
     /// @param _id A Bond ID.
     modifier matched(uint256 _id) {
-        require(bonds[_id].emitter != address(0) && bonds[_id].owner != address(0), "Bond isn't matched");
+        require(bonds[_id].emitter != address(0) && bonds[_id].holder != address(0), "Bond isn't matched");
         _;
     }
 
@@ -145,8 +154,8 @@ contract BondService {
         emitterFee = 500; // 0.5%
         emit BondEmitterFeeUpdated(emitterFee);
 
-        ownerFee = 10000; // 10%
-        emit BondOwnerFeeUpdated(ownerFee);
+        holderFee = 10000; // 10%
+        emit BondHolderFeeUpdated(holderFee);
 
         minEther = 0.1 ether;
         emit BondMinEtherUpdated(minEther);
@@ -163,10 +172,10 @@ contract BondService {
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
         require(_yearFee <= 10000, "Fee out of range");
 
-        return createBond(tx.origin, address(0), _percent, _expiration, _yearFee);
+        return createBond(msg.sender, address(0), _percent, _expiration, _yearFee);
     }
 
-    /// @dev Creates owner request.
+    /// @dev Creates holder request.
     /// @param _expiration The expiration in seconds.
     /// @param _yearFee The percentage of the commission.
     /// @return New Bond ID.
@@ -175,19 +184,19 @@ contract BondService {
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
         require(_yearFee <= 10000, "Fee out of range");
 
-        return createBond(address(0), tx.origin, 0, _expiration, _yearFee);
+        return createBond(address(0), msg.sender, 0, _expiration, _yearFee);
     }
 
     /// @dev Creates Bond request.
     /// @param _emitter The address of the emitter.
-    /// @param _owner The address of the owner.
+    /// @param _holder The address of the holder.
     /// @param _percent The collateral percentage.
     /// @param _expiration The expiration in seconds.
     /// @param _yearFee The percentage of the commission.
     /// @return New Bond ID.
     function createBond(
         address _emitter,
-        address _owner,
+        address _holder,
         uint256 _percent,
         uint256 _expiration,
         uint256 _yearFee
@@ -197,7 +206,7 @@ contract BondService {
     {
         Bond memory _bond = Bond(
             _emitter,
-            _owner,
+            _holder,
             msg.value,
             _percent,
             0,
@@ -208,7 +217,7 @@ contract BondService {
             0
         );
         uint256 _id = bonds.push(_bond).sub(1);
-        emit BondCreated(_id, tx.origin, msg.value, _percent, _expiration, _yearFee);
+        emit BondCreated(_id, msg.sender, msg.value, _percent, _expiration, _yearFee);
         return _id;
     }
 
@@ -227,7 +236,7 @@ contract BondService {
     /// @param _percent The collateral percentage.
     /// @param _expiration The expiration in seconds.
     /// @param _yearFee The percentage of the commission.
-    function changeEmitter(uint256 _id, uint256 _deposit, uint256 _percent, uint256 _expiration, uint256 _yearFee)
+    function emitterChange(uint256 _id, uint256 _deposit, uint256 _percent, uint256 _expiration, uint256 _yearFee)
         external
         payable
         singleOwner(_id)
@@ -241,16 +250,16 @@ contract BondService {
         emit BondChanged(_id, _deposit, _percent, _expiration, _yearFee, msg.sender);
     }
 
-    /// @dev Changes the owner request.
+    /// @dev Changes the holder request.
     /// @param _id A Bond ID.
     /// @param _deposit The collateral amount.
     /// @param _expiration The expiration in seconds.
     /// @param _yearFee The percentage of the commission.
-    function changeOwner(uint256 _id, uint256 _deposit, uint256 _expiration, uint256 _yearFee)
+    function holderChange(uint256 _id, uint256 _deposit, uint256 _expiration, uint256 _yearFee)
         external
         payable
     {
-        require(bonds[_id].owner == msg.sender && bonds[_id].emitter == address(0), "You are not the owner ot bond is matched");
+        require(bonds[_id].holder == msg.sender && bonds[_id].emitter == address(0), "You are not the holder ot bond is matched");
         changeDeposit(_id, _deposit);
         changeExpiration(_id, _expiration);
         changeYearFee(_id, _yearFee);
@@ -309,23 +318,23 @@ contract BondService {
         uint256 _tmv = _eth.mul(rate()).div(precision());
         uint256 _box = ITBoxManager(settings.logicManager()).create.value(bonds[_id].deposit)(_tmv);
 
-        bonds[_id].owner = msg.sender;
+        bonds[_id].holder = msg.sender;
         bonds[_id].tmv = _tmv;
         bonds[_id].expiration = bonds[_id].expiration.add(now);
-        bonds[_id].sysFee = ownerFee;
+        bonds[_id].sysFee = holderFee;
         bonds[_id].tBoxId = _box;
         bonds[_id].createdAt = now;
 
         _emitter.transfer(_eth.sub(_sysEth));
         IToken(settings.tmvAddress()).transfer(msg.sender, _tmv);
-        emit BondMatched(_id, msg.sender, _box, _tmv, ownerFee, _emitter);
+        emit BondMatched(_id, msg.sender, _box, _tmv, holderFee, _emitter);
     }
 
-    /// @dev Uses to match the owner request.
+    /// @dev Uses to match the holder request.
     /// @param _id A Bond ID.
     function takeBuyRequest(uint256 _id) external payable buyRequest(_id) validTx {
 
-        address _owner = bonds[_id].owner;
+        address _holder = bonds[_id].holder;
 
         uint256 _sysEth = bonds[_id].deposit.mul(emitterFee).div(divider);
         systemETH = systemETH.add(_sysEth);
@@ -336,13 +345,13 @@ contract BondService {
         bonds[_id].emitter = msg.sender;
         bonds[_id].tmv = _tmv;
         bonds[_id].expiration = bonds[_id].expiration.add(now);
-        bonds[_id].sysFee = ownerFee;
+        bonds[_id].sysFee = holderFee;
         bonds[_id].tBoxId = _box;
         bonds[_id].createdAt = now;
 
         msg.sender.transfer(bonds[_id].deposit.sub(_sysEth));
-        IToken(settings.tmvAddress()).transfer(_owner, _tmv);
-        emit BondMatched(_id, msg.sender, _box, _tmv, ownerFee, _owner);
+        IToken(settings.tmvAddress()).transfer(_holder, _tmv);
+        emit BondMatched(_id, msg.sender, _box, _tmv, holderFee, _holder);
     }
 
     /// @dev Finishes the bond.
@@ -365,7 +374,7 @@ contract BondService {
             .div(divider);
         uint256 _sysTMV = _commission.mul(bond.sysFee).div(divider);
 
-        address _owner = bond.owner;
+        address _holder = bond.holder;
 
         if (_sysTMV.add(_debt) > 0) {
             IToken(settings.tmvAddress()).transferFrom(
@@ -377,7 +386,7 @@ contract BondService {
         if (_commission > 0) {
             IToken(settings.tmvAddress()).transferFrom(
                 msg.sender,
-                    _owner,
+                    _holder,
                 _commission.sub(_sysTMV)
             );
         }
@@ -391,7 +400,7 @@ contract BondService {
             delete bonds[_id];
         }
 
-        emit BondFinished(_id, msg.sender, _owner);
+        emit BondFinished(_id, msg.sender, _holder);
     }
 
     /// @dev Executes expiration process of the bond.
@@ -404,7 +413,7 @@ contract BondService {
         (uint256 _eth, uint256 _tmv) = getBox(bonds[_id].tBoxId);
 
         if (_eth == 0) {
-            emit BondExpired(_id, bonds[_id].emitter, bonds[_id].owner);
+            emit BondExpired(_id, bonds[_id].emitter, bonds[_id].holder);
             delete bonds[_id];
             return;
         }
@@ -419,9 +428,9 @@ contract BondService {
 
         systemETH = systemETH.add(_commission);
 
-        ITBoxManager(settings.logicManager()).transferFrom(address(this), bonds[_id].owner, bonds[_id].tBoxId);
+        ITBoxManager(settings.logicManager()).transferFrom(address(this), bonds[_id].holder, bonds[_id].tBoxId);
 
-        emit BondExpired(_id, bonds[_id].emitter, bonds[_id].owner);
+        emit BondExpired(_id, bonds[_id].emitter, bonds[_id].holder);
 
         delete bonds[_id];
     }
@@ -465,12 +474,12 @@ contract BondService {
         emit BondEmitterFeeUpdated(_value);
     }
 
-    /// @dev Sets owner fee.
+    /// @dev Sets holder fee.
     /// @param _value Commission percentage.
-    function setOwnerFee(uint256 _value) external onlyAdmin {
+    function setHolderFee(uint256 _value) external onlyAdmin {
         require(_value <= 50000, "Too much");
-        ownerFee = _value;
-        emit BondOwnerFeeUpdated(_value);
+        holderFee = _value;
+        emit BondHolderFeeUpdated(_value);
     }
 
     /// @dev Sets minimum deposit amount.
@@ -496,5 +505,19 @@ contract BondService {
     /// @dev Returns current oracle ETH/USD price with precision.
     function rate() public view returns(uint256) {
         return IOracle(settings.oracleAddress()).ethUsdPrice();
+    }
+
+    /// @dev Transfers emitter's rights of an Order.
+    function transferEmitterRights(address _to, uint256 _id) external onlyEmitter(_id) {
+        require(_to != address(0), "Zero address, be careful");
+        bonds[_id].emitter = _to;
+        emit EmitterRightsTransferred(msg.sender, _to, _id);
+    }
+
+    /// @dev Transfers holder's rights of an Order.
+    function transferHolderRights(address _to, uint256 _id) external onlyHolder(_id) {
+        require(_to != address(0), "Zero address, be careful");
+        bonds[_id].holder = _to;
+        emit HolderRightsTransferred(msg.sender, _to, _id);
     }
 }

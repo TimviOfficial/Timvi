@@ -172,9 +172,9 @@ contract LeverageService {
             "Collateral percent out of range"
         );
 
-        Order memory _order = Order(tx.origin, msg.value, _percent);
+        Order memory _order = Order(msg.sender, msg.value, _percent);
         uint256 _id = orders.push(_order).sub(1);
-        emit OrderCreated(_id, tx.origin, msg.value, _percent);
+        emit OrderCreated(_id, msg.sender, msg.value, _percent);
         return _id;
     }
 
@@ -228,5 +228,12 @@ contract LeverageService {
         IToken(settings.tmvAddress()).transfer(_owner, _tmv.sub(_sysTmv));
         emit OrderMatched(_id, _box, msg.sender, _owner);
         return _tmv.sub(_sysTmv);
+    }
+
+    /// @dev Transfers ownership of an Order.
+    function transfer(address _to, uint256 _id) external onlyOwner(_id) {
+        require(_to != address(0), "Zero address, be careful");
+        orders[_id].owner = _to;
+        emit Transferred(msg.sender, _to, _id);
     }
 }
