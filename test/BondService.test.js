@@ -457,7 +457,7 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
             let bondId = 1;
             await this.service.close(bondId, { from: holder});
 
-            await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter}), 'The bond isn\'t an buy request');
+            await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo, from: emitter}), 'The bond isn\'t a buy request');
         });
         it("returns when attached value is less than possible", async function () {
             await expectRevert(this.service.takeBuyRequest(bondId, {value: matchDepo.div(new BN(2)),from: emitter}), 'Token amount is more than available');

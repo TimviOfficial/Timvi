@@ -103,7 +103,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
             let deposit = ether("5");
             await this.logic.create(ether("4"), {from: owner, value: deposit});
             await this.token.transfer(anotherAccount, ether("4"), {from: owner});
-            await expectRevert(this.logic.close(0,  {from: owner}), 'You don\'t have tokens enough');
+            await expectRevert(this.logic.close(0,  {from: owner}), 'You don\'t have enough tokens');
         });
         it("when tokens doesn't need to close TMV balance should not change", async function () {
             let deposit = ether("5");
@@ -189,7 +189,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
             });
             it("when user TMV balance not enough", async function () {
                 await this.token.transfer(anotherAccount, release, {from: owner});
-                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'You don\'t have tokens enough');
+                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'You don\'t have enough tokens');
             });
             it("when collateral percent less than min", async function () {
                 await this.oracle.setPrice(1999000);
@@ -291,7 +291,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
                 await expectRevert(this.logic.withdrawEth(0, withdraw, {from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
             });
             it("withdrawing zero", async function () {
-                await expectRevert(this.logic.withdrawEth(0, 0, {from: owner}), "Withdrawing zero doesn't help you buy lamba");
+                await expectRevert(this.logic.withdrawEth(0, 0, {from: owner}), "Withdrawing zero");
             });
             it("if TBox doesn't exist", async function () {
                 await expectRevert.unspecified(this.logic.withdrawEth(100, withdraw, {from: owner}));
@@ -486,7 +486,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
             it("when user has no tokens enough", async function () {
                 let addingTMV = ether("26");
                 await this.token.transfer(anotherAccount, addingTMV, {from: owner});
-                await expectRevert(this.logic.addTmv(0, addingTMV, {from: owner}), 'You don\'t have tokens enough');
+                await expectRevert(this.logic.addTmv(0, addingTMV, {from: owner}), 'You don\'t have enough tokens');
             });
         });
         describe('success', function () {
@@ -654,7 +654,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
             });
             it('when collateral deposit is larger than min deposit', async function () {
                 await this.logic.addEth(0, {from:owner,value: deposit});
-                await expectRevert(this.logic.closeDust(0), 'It\'s possible to collapse only dust');
+                await expectRevert(this.logic.closeDust(0), 'It\'s only possible to collapse dust');
             });
         });
         describe('success', function () {
