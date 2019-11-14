@@ -27,7 +27,7 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         this.gasPrice = new BN(tx.gasPrice);
     });
 
-    describe('Bid creating', function () {
+    describe('Order creating', function () {
         let deposit = ether("2");
         let percent = new BN('150000');
         it('reverts when deposit is very small', async function () {
@@ -36,14 +36,14 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         });
         it('reverts when specified percent is higher than available', async function () {
             let percent = 115900;
-            await expectRevert(this.service.create(percent, { from: owner, value: deposit}), "Collateralization is not enough");
+            await expectRevert(this.service.create(percent, { from: owner, value: deposit}), "Collateral percent out of range");
         });
-        it('creates record about new Bid', async function () {
+        it('creates record about new Order', async function () {
             await this.service.create(percent, { from: owner,value: deposit});
-            let bid = await this.service.bids.call(0);
-            expect(bid[0]).to.have.string(owner);
-            expect(bid[1]).to.be.bignumber.equal(deposit);
-            expect(bid[2]).to.be.bignumber.equal(percent);
+            let order = await this.service.orders.call(0);
+            expect(order[0]).to.have.string(owner);
+            expect(order[1]).to.be.bignumber.equal(deposit);
+            expect(order[2]).to.be.bignumber.equal(percent);
         });
         it('increases the contract balance', async function () {
             let tx = this.service.create(percent, { value: deposit});
@@ -51,7 +51,7 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         });
         it('emits a create event', async function () {
             const { logs } = await this.service.create(percent, { from: owner, value: deposit });
-            expectEvent.inLogs(logs, 'BidCreated', {
+            expectEvent.inLogs(logs, 'OrderCreated', {
                 id: new BN(0),
                 owner: owner,
                 pack: deposit,
@@ -62,76 +62,76 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
 
         let deposit = ether("1");
         let percent = new BN('150000');
-        let bidId = new BN(0);
+        let orderId = new BN(0);
 
         beforeEach(async function () {
             await this.service.create(percent, { from: owner,value: deposit});
         });
 
         it("reverts closing by alien", async function () {
-            await expectRevert(this.service.close(new BN(0), {from: anotherAccount}), 'Bid isn\'t your');
+            await expectRevert(this.service.close(new BN(0), {from: anotherAccount}), 'Order isn\'t your');
         });
-        it("removes a record about Bid", async function () {
-            await this.service.close(bidId, {from: owner});
-            let bid = await this.service.bids(bidId);
-            expect(bid[0]).to.have.string(ZERO_ADDRESS);
-            expect(bid[1]).to.be.bignumber.equal(new BN(0));
-            expect(bid[2]).to.be.bignumber.equal(new BN(0));
+        it("removes a record about Order", async function () {
+            await this.service.close(orderId, {from: owner});
+            let order = await this.service.orders(orderId);
+            expect(order[0]).to.have.string(ZERO_ADDRESS);
+            expect(order[1]).to.be.bignumber.equal(new BN(0));
+            expect(order[2]).to.be.bignumber.equal(new BN(0));
         });
         it("increases ETH user balance", async function () {
-            let tx = this.service.close(bidId, {from: owner});
+            let tx = this.service.close(orderId, {from: owner});
             let diff = await balance.differenceExcludeGas(owner, tx, this.gasPrice);
             expect(diff).to.be.bignumber.equal(deposit);
         });
         it("reduces ETH contract balance", async function () {
-            let tx = this.service.close(bidId, {from: owner});
+            let tx = this.service.close(orderId, {from: owner});
             expect((await balance.difference(this.service.address, tx))).to.be.bignumber.equal(deposit);
         });
         it('emits a close event', async function () {
             const { logs } = await this.service.close(0, { from: owner });
-            expectEvent.inLogs(logs, 'BidClosed', {
+            expectEvent.inLogs(logs, 'OrderClosed', {
                 id: new BN(0),
             });
         });
     });
-    describe('Matching', function () {
+    describe('Matching a leverage order', function () {
 
         let deposit = ether("1");
         deposit = new BN(deposit.toString());
         let percent = new BN(115217);
         let matchDepo = deposit.mul(new BN(100000)).div(percent);
-        let bidId = new BN(0);
+        let orderId = new BN(0);
 
         beforeEach(async function () {
             await this.logic.create(1, { from: owner, value: deposit.mul(new BN(10)) });
             await this.service.create(percent, { from: owner,value: deposit});
         });
 
-        it("reverts non-existent bid", async function () {
+        it("reverts non-existent order", async function () {
             await this.service.create(percent, { from: owner,value: deposit});
-            let bidId = 1;
-            await this.service.close(bidId, { from: owner});
+            let orderId = 1;
+            await this.service.close(orderId, { from: owner});
 
-            await expectRevert(this.service.take(bidId, {value: matchDepo, from: anotherAccount}), 'Bid doesn\'t exist');
+            await expectRevert(this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount}), 'Order doesn\'t exist');
         });
         it("returns when attached value isn't expected", async function () {
-            await expectRevert(this.service.take(bidId, {value: matchDepo.add(new BN(1)),from: anotherAccount}), 'Incorrect ETH value');
-            await expectRevert(this.service.take(bidId, {value: matchDepo.sub(new BN(1)),from: anotherAccount}), 'Incorrect ETH value');
+            await expectRevert(this.service.takeLeverageOrder(orderId, {value: matchDepo.add(new BN(1)),from: anotherAccount}), 'Incorrect ETH value');
+            await expectRevert(this.service.takeLeverageOrder(orderId, {value: matchDepo.sub(new BN(1)),from: anotherAccount}), 'Incorrect ETH value');
         });
         it("returns when the percentage has become impossible", async function () {
             await this.logic.withdrawTmvMax(new BN(0), {from: owner});
 
-            await expectRevert(this.service.take(bidId, {value: matchDepo, from: anotherAccount}), 'Token amount is more than available'); //reverts in ClassicCapitalized
+            await expectRevert(this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount}), 'Token amount is more than available'); //reverts in ClassicCapitalized
         });
         it("mints 721 token to owner", async function () {
-            await this.service.take(bidId, {value: matchDepo, from: anotherAccount});
+            await this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
             let tokenId = 1;
             let apprOrOwnr = await this.logic.isApprovedOrOwner.call(owner, tokenId);
 
             expect(apprOrOwnr).to.be.true;
         });
         it("transfers mathcing ETH to owner", async function () {
-            let tx = this.service.take(bidId, {value: matchDepo, from: anotherAccount});
+            let tx = this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
             let diff = await balance.difference(owner, tx);
             let fee = matchDepo.mul(new BN(5)).div(new BN(1000)); //0.5%
 
@@ -139,7 +139,7 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         });
         it("mints TMV equivalent to matcher", async function () {
             let balanceBefore = await this.token.balanceOf(anotherAccount);
-            await this.service.take(bidId, {value: matchDepo, from: anotherAccount});
+            await this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
             let rate = new BN(10000000);
             let precision = new BN(100000);
             let tmv = matchDepo.mul(rate).div(precision);
@@ -148,18 +148,18 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
 
             expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(tmv.sub(fee));
         });
-        it("removes record about matched bid", async function () {
-            await this.service.take(bidId, {value: matchDepo, from: anotherAccount});
-            let bid = await this.service.bids(0);
+        it("removes record about matched order", async function () {
+            await this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let order = await this.service.orders(0);
 
-            expect(bid[0]).to.have.string(ZERO_ADDRESS);
-            expect(bid[1]).to.be.bignumber.equal(new BN(0));
-            expect(bid[2]).to.be.bignumber.equal(new BN(0));
+            expect(order[0]).to.have.string(ZERO_ADDRESS);
+            expect(order[1]).to.be.bignumber.equal(new BN(0));
+            expect(order[2]).to.be.bignumber.equal(new BN(0));
         });
         it("mints TMV equivalent to matcher", async function () {
             let balanceBefore = await this.token.balanceOf(this.service.address);
-            let packed = (await this.service.bids(0))[1];
-            let tx = this.service.take(bidId, {value: matchDepo, from: anotherAccount});
+            let packed = (await this.service.orders(0))[1];
+            let tx = this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
             let diff = await balance.difference(this.service.address, tx);
             let rate = new BN(10000000);
             let precision = new BN(100000);
@@ -172,11 +172,93 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
             expect(diff).to.be.bignumber.equal(packed.sub(feeETH));
         });
         it("emits the matching event", async function () {
-            let {logs} = await this.service.take(bidId, {value: matchDepo, from: anotherAccount});
+            let {logs} = await this.service.takeLeverageOrder(orderId, {value: matchDepo, from: anotherAccount});
 
-            expectEvent.inLogs(logs, 'BidMatched', {
+            expectEvent.inLogs(logs, 'OrderMatched', {
                 id: new BN(0),
                 tBox: new BN(1),
+            });
+        });
+    });
+
+    describe('Matching an exchange order', function () {
+
+        let deposit = ether("2");
+        let rate, divider, tmv, precision;
+        let matchDepo = ether("3");
+        let orderId = new BN(0);
+
+        beforeEach(async function () {
+            await this.service.create(0, { from: owner, value: deposit});
+        });
+
+        it("reverts non-existent order", async function () {
+            rate = await this.logic.rate();
+            divider = new BN('100000');
+            precision = new BN('100000');
+            tmv = deposit.mul(rate).div(precision);
+            await this.service.close(orderId, { from: owner});
+
+            await expectRevert(this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount}), 'Order doesn\'t exist');
+        });
+        it("returns when attached value is out of range", async function () {
+            let matchDepo = deposit.mul(new BN(115217)).div(divider);
+
+            await expectRevert(this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount}), 'Token amount is more than available');
+        });
+        it("mints 721 token to owner", async function () {
+            await this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let tokenId = 0;
+            let apprOrOwnr = await this.logic.isApprovedOrOwner.call(anotherAccount, tokenId);
+
+            expect(apprOrOwnr).to.be.true;
+        });
+        it("transfers packed ETH to matcher", async function () {
+            let tx = this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let diff = await balance.differenceExcludeGas(anotherAccount, tx, this.gasPrice);
+            let fee = deposit.mul(new BN(5)).div(new BN(1000)); //0.5%
+            let calculatedDiff = matchDepo.sub(deposit).add(fee);
+
+            expect(diff).to.be.bignumber.equal(calculatedDiff);
+        });
+        it("mints TMV equivalent to owner", async function () {
+            rate = await this.logic.rate();
+            precision = new BN(100000);
+            divider = new BN(100000);
+            tmv = deposit.mul(rate).div(precision);
+            let balanceBefore = await this.token.balanceOf(owner);
+            await this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let fee = tmv.mul(new BN(5)).div(new BN(1000)); //0.5%
+            let balanceAfter = await this.token.balanceOf(owner);
+
+            expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(tmv.sub(fee));
+        });
+        it("removes record about matched order", async function () {
+            await this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let order = await this.service.orders(0);
+
+            expect(order[0]).to.have.string(ZERO_ADDRESS);
+            expect(order[1]).to.be.bignumber.equal(new BN(0));
+        });
+        it("mints TMV equivalent to matcher", async function () {
+            let balanceBefore = await this.token.balanceOf(this.service.address);
+            let packed = (await this.service.orders(0))[1];
+            let tx = this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+            let diff = await balance.difference(this.service.address, tx);
+            let tmv = deposit.mul(rate).div(precision);
+            let feeTMV = tmv.mul(new BN(5)).div(new BN(1000)); //0.5%
+            let balanceAfter = await this.token.balanceOf(this.service.address);
+            let feeETH = deposit.mul(new BN(5)).div(new BN(1000)); //0.5%
+
+            expect(balanceAfter.sub(balanceBefore)).to.be.bignumber.equal(feeTMV);
+            expect(diff).to.be.bignumber.equal(packed.sub(feeETH));
+        });
+        it("emits the matching event", async function () {
+            let {logs} = await this.service.takeExchangeOrder(orderId, {value: matchDepo, from: anotherAccount});
+
+            expectEvent.inLogs(logs, 'OrderMatched', {
+                id: new BN(0),
+                tBox: new BN(0),
             });
         });
     });
@@ -185,11 +267,11 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         let deposit = ether("1");
         let percent = new BN(151000);
         let matchDepo = deposit.mul(new BN(100000)).div(percent);
-        let bidId = new BN(0);
+        let orderId = new BN(0);
 
         beforeEach(async function () {
             await this.service.create(percent, {from: owner, value: deposit});
-            await this.service.take(bidId, {from: anotherAccount, value: matchDepo});
+            await this.service.takeLeverageOrder(orderId, {from: anotherAccount, value: matchDepo});
         });
 
         describe('reverts', function () {
@@ -230,11 +312,11 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         let deposit = ether("1");
         let percent = new BN(151000);
         let matchDepo = deposit.mul(new BN(100000)).div(percent);
-        let bidId = new BN(0);
+        let orderId = new BN(0);
 
         beforeEach(async function () {
             await this.service.create(percent, {from: owner, value: deposit});
-            await this.service.take(bidId, {from: anotherAccount, value: matchDepo});
+            await this.service.takeLeverageOrder(orderId, {from: anotherAccount, value: matchDepo});
         });
 
         describe('reverts', function () {
@@ -269,21 +351,25 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         });
     });
     describe('Settings the commission', function () {
-        let commission = new BN(10000);
+        let leverageFee = new BN(10000);
+        let exchangeFee = new BN(10000);
         describe('reverts', function () {
 
             it("if setting value is higher than 10%", async function () {
-                await expectRevert(this.service.setCommission(commission.add(new BN(1))), 'Too much');
+                await expectRevert(this.service.setCommission(leverageFee.add(new BN(1)), exchangeFee), 'Too much');
+                await expectRevert(this.service.setCommission(leverageFee, exchangeFee.add(new BN(1))), 'Too much');
             });
             it("setting by non-admin", async function () {
-                await expectRevert(this.service.setCommission(commission, {from: anotherAccount}), 'You have no access');
+                await expectRevert(this.service.setCommission(leverageFee, exchangeFee, {from: anotherAccount}), 'You have no access');
             });
         });
         describe('success', function () {
             it("changes the commission", async function () {
-                await this.service.setCommission(commission);
-                let newCom = await this.service.commission();
-                expect(newCom).to.be.bignumber.equal(commission);
+                await this.service.setCommission(leverageFee, exchangeFee);
+                let newLeverageFee = await this.service.feeLeverage();
+                expect(newLeverageFee).to.be.bignumber.equal(leverageFee);
+                let newExchangeFee = await this.service.feeExchange();
+                expect(newExchangeFee).to.be.bignumber.equal(exchangeFee);
             });
         });
     });
@@ -327,5 +413,3 @@ contract('LeverageService', function ([_, owner, anotherAccount]) {
         });
     });
 });
-
-// Timvi Settings Ropsten 0x4a2e3883d5f574178660998b05fc7211f5b2960e

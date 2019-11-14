@@ -2,12 +2,11 @@
 
 Smart contracts are written in Solidity v0.5.11
 
-- [Logic](contracts/Logic.sol) ERC-721 Non-Fungible TBox Token contract. The main Timvi stablecoin logic contract.
+- [Logic](contracts/TBoxManager.sol) ERC-721 Non-Fungible TBox Token contract. The main Timvi stablecoin logic contract.
 - [TimviSettings](contracts/TimviSettings.sol) Settings store.
 - [TimviToken](contracts/TimviToken.sol) ERC-20 Timvi stablecoin.
 - [PriceGetter](oracle-contract/PriceGetter.sol) ETHUSD price oracle contract (using Oraclize).
-- [1by1](contracts/services/leverage-exchange/ExchangeService.sol) With 1by1 you can exchange ETH to TMV according to the system’s internal rate.
-- [Leverage](contracts/services/leverage-exchange/LeverageService.sol) Service that allows you to receive ETH for a collateral in ETH. 
+- [Leverage](contracts/services/leverage-exchange/LeverageService.sol) Service that allows you to receive ETH for a collateral in ETH and also you can exchange ETH to TMV according to the system’s internal rate.
 - [Bond](contracts/services/bond/BondService.sol) TBond is the service you can choose if you want to withdraw and sell TMV to get ETH fast and easy.
 
 
@@ -20,13 +19,12 @@ Smart contracts are written in Solidity v0.5.11
 1. Set deployed ERC20 address in settings using `setTmvAddress` function
 1. Deploy [PriceGetter.sol](oracle-contract/PriceGetter.sol)
 1. Set deployed oracle address in settings using `setOracleAddress` function
-1. Deploy [Logic.sol](contracts/Logic.sol) with TimviSetttings address as constructor parameter
+1. Deploy [Logic.sol](contracts/TBoxManager.sol) with TimviSetttings address as constructor parameter
 1. Call `setContractManager` setting's function with deployed contract address
 
 
-#### Exchange / Leverage
+#### Leverage
 
-- Deploy [ServiceExchange.sol](contracts/services/leverage-exchange/ExchangeService.sol) with TimviSetttings address as constructor parameter
 - Deploy [ServiceToGetEtherLeverage.sol](contracts/services/leverage-exchange/LeverageService.sol) with TimviSetttings address as constructor parameter
 
 
