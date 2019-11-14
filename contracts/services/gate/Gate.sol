@@ -78,7 +78,7 @@ contract Gate {
         _;
     }
 
-    /// @notice ISettings address couldn't be changed later.
+    /// @notice ISettings address can't be changed later.
     /// @dev The contract constructor sets the original `admin` of the contract to the sender
     //   account and sets the settings contract with provided address.
     /// @param _settings The address of the settings contract.
@@ -164,7 +164,7 @@ contract Gate {
 
     /// @dev Cancels an Order.
     function cancel(uint256 _id) external {
-        require(orders[_id].owner == msg.sender, "Order isn't your");
+        require(orders[_id].owner == msg.sender, "Order isn't yours");
 
         uint256 tmv = orders[_id].amount;
         delete orders[_id];

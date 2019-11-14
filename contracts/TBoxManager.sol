@@ -253,7 +253,7 @@ contract TBoxManager is TBoxToken {
     /// @param _id A Box ID.
     /// @param _amount The number of Ether to withdraw.
     function withdrawEth(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) validTx {
-        require(_amount > 0, "Withdrawing zero doesn't help you buy lamba");
+        require(_amount > 0, "Withdrawing zero");
 
         require(_amount <= withdrawableEth(_id), "You can't withdraw so much");
 
@@ -338,7 +338,7 @@ contract TBoxManager is TBoxToken {
         require(collateralPercent(_id) >= settings.minStability(), "This Box isn't collapsable");
 
         // Check collateral amount of the Box
-        require(boxes[_id].collateral.mul(rate()) < precision.mul(3).mul(10 ** 18), "It's possible to collapse only dust");
+        require(boxes[_id].collateral.mul(rate()) < precision.mul(3).mul(10 ** 18), "It's only possible to collapse dust");
 
         // Burn needed TMV amount to close
         uint256 _tmvReleased = boxes[_id].tmvReleased;
@@ -375,7 +375,7 @@ contract TBoxManager is TBoxToken {
     /// @dev Burns specified number of TMV tokens.
     function _burnTMV(address _from, uint256 _amount) internal {
         if (_amount > 0) {
-            require(IToken(settings.tmvAddress()).balanceOf(_from) >= _amount, "You don't have tokens enough");
+            require(IToken(settings.tmvAddress()).balanceOf(_from) >= _amount, "You don't have enough tokens");
             IToken(settings.tmvAddress()).burnLogic(_from, _amount);
         }
     }
@@ -402,7 +402,7 @@ contract TBoxManager is TBoxToken {
     /// @dev Given a Box ID, returns an amount of Ether that can be withdrawn.
     function withdrawableEth(uint256 _id) public view onlyExists(_id) returns(uint256) {
 
-        // Amount of Ether that not used in collateralization
+        // Amount of Ether that is not used in collateralization
         uint256 _avlbl = _freeEth(_id);
         // Return available Ether to withdraw
         if (_avlbl == 0) return 0;
@@ -411,7 +411,7 @@ contract TBoxManager is TBoxToken {
         else return _avlbl;
     }
 
-    /// @dev Given a Box ID, returns amount of ETH that not used in collateralization.
+    /// @dev Given a Box ID, returns amount of ETH that is not used in collateralization.
     function _freeEth(uint256 _id) internal view returns(uint256) {
         // Grab a reference to the Box
         Box memory box = boxes[_id];

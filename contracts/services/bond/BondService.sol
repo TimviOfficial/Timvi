@@ -132,18 +132,18 @@ contract BondService {
     /// @dev Modifier to allow actions only when the bond is holder's request
     /// @param _id A Bond ID.
     modifier buyRequest(uint256 _id) {
-        require(bonds[_id].holder != address(0) && bonds[_id].emitter == address(0), "The bond isn't an buy request");
+        require(bonds[_id].holder != address(0) && bonds[_id].emitter == address(0), "The bond isn't a buy request");
         _;
     }
 
-    /// @dev Modifier to allow actions only when the bond is mathced
+    /// @dev Modifier to allow actions only when the bond is matched
     /// @param _id A Bond ID.
     modifier matched(uint256 _id) {
         require(bonds[_id].emitter != address(0) && bonds[_id].holder != address(0), "Bond isn't matched");
         _;
     }
 
-    /// @notice Settings address couldn't be changed later.
+    /// @notice Settings address can't be changed later.
     /// @dev The contract constructor sets the original `admin` of the contract to the sender
     //   account and sets the settings contract with provided address.
     /// @param _settings The address of the settings contract.
@@ -259,7 +259,7 @@ contract BondService {
         external
         payable
     {
-        require(bonds[_id].holder == msg.sender && bonds[_id].emitter == address(0), "You are not the holder ot bond is matched");
+        require(bonds[_id].holder == msg.sender && bonds[_id].emitter == address(0), "You are not the holder or bond is matched");
         changeDeposit(_id, _deposit);
         changeExpiration(_id, _expiration);
         changeYearFee(_id, _yearFee);
@@ -360,7 +360,7 @@ contract BondService {
 
         Bond memory bond = bonds[_id];
 
-        // It's not need to check matching of the bond
+        // It's not needed to check matching of the bond
         // since the expiration period cannot exceed 365 days.
         require(now < bond.expiration, "Bond expired");
 
