@@ -16,7 +16,6 @@ contract TimviSettings is ManagerRole {
     uint256 public minDeposit;
     uint256 public sysFee;
     uint256 public userFee;
-    uint256 constant public COMM_DIVIDER = 100000;
 
     uint256 public gasPriceLimit;
 
