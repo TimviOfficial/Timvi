@@ -176,7 +176,9 @@ contract Gate {
     /// @dev Fills Orders by ids array.
     function multiFill(uint256[] _ids) external onlyAdmin() payable {
 
-        emit Funded(msg.value);
+        if (msg.value > 0) {
+            emit Funded(msg.value);
+        }
 
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 id = _ids[i];
