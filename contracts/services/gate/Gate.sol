@@ -182,11 +182,13 @@ contract Gate {
 
             require(address(this).balance >= eth, "Not enough funds");
 
-            address owner = orders[id].owner;
-            delete orders[id];
-            IToken(settings.tmvAddress()).transfer(timviWallet, tmv);
-            owner.transfer(eth);
-            emit OrderFilledPool(id, owner, tmv, eth);
+            if (owner.send(eth)) {
+                address owner = orders[id].owner;
+                delete orders[id];
+                IToken(settings.tmvAddress()).transfer(timviWallet, tmv);
+
+                emit OrderFilledPool(id, owner, tmv, eth);
+            }
         }
     }
 
