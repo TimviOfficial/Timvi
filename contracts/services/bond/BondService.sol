@@ -296,7 +296,7 @@ contract BondService {
     }
 
     function changeYearFee(uint256 _id, uint256 _yearFee) internal {
-        uint256 _oldYearFee = bonds[_id].expiration;
+        uint256 _oldYearFee = bonds[_id].yearFee;
         if (_oldYearFee != _yearFee) {
             require(_yearFee <= 10000, "Fee out of range");
             bonds[_id].yearFee = _yearFee;
