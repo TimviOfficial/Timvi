@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
@@ -24,7 +24,7 @@ contract Gate {
     uint256 public minOrder;
 
     // The address to transfer tokens
-    address payable public timviWallet;
+    address public timviWallet;
 
     ISettings public settings;
 
@@ -35,7 +35,7 @@ contract Gate {
     /// @dev The Order struct. Every Order is represented by a copy
     ///  of this structure.
     struct Order {
-        address payable owner;
+        address owner;
         uint256 amount;
     }
 
@@ -98,7 +98,7 @@ contract Gate {
     }
 
     /// @dev Withdraws ETH.
-    function withdraw(address payable _beneficiary, uint256 _amount) external onlyAdmin {
+    function withdraw(address _beneficiary, uint256 _amount) external onlyAdmin {
         require(_beneficiary != address(0), "Zero address, be careful");
         require(address(this).balance >= _amount, "Insufficient funds");
         _beneficiary.transfer(_amount);
@@ -129,7 +129,7 @@ contract Gate {
     }
 
     /// @dev Sets timvi wallet address.
-    function setTimviWallet(address payable _wallet) external onlyAdmin {
+    function setTimviWallet(address _wallet) external onlyAdmin {
         require(_wallet != address(0), "Zero address, be careful");
 
         timviWallet = _wallet;
@@ -168,7 +168,7 @@ contract Gate {
     }
 
     /// @dev Fills Orders by ids array.
-    function multiFill(uint256[] calldata _ids) external onlyAdmin() payable {
+    function multiFill(uint256[] _ids) external onlyAdmin() payable {
 
         emit Funded(msg.value);
 
@@ -182,7 +182,7 @@ contract Gate {
 
             require(address(this).balance >= eth, "Not enough funds");
 
-            address payable owner = orders[id].owner;
+            address owner = orders[id].owner;
             delete orders[id];
             IToken(settings.tmvAddress()).transfer(timviWallet, tmv);
             owner.transfer(eth);
@@ -196,7 +196,7 @@ contract Gate {
 
         // Retrieve values from storage
         uint256 tmv = orders[_id].amount;
-        address payable owner = orders[_id].owner;
+        address owner = orders[_id].owner;
 
         // Calculate the demand amount of Ether
         uint256 eth = tmv.mul(precision()).div(rate());

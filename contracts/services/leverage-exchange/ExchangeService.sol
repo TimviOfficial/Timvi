@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
@@ -83,7 +83,7 @@ contract ExchangeService {
     }
 
     /// @dev Withdraws system fee.
-    function withdrawSystemETH(address payable _beneficiary) external onlyAdmin {
+    function withdrawSystemETH(address _beneficiary) external onlyAdmin {
         require(_beneficiary != address(0), "Zero address, be careful");
         require(systemETH > 0, "There is no available ETH");
 

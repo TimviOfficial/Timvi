@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "../../helpers/SafeMath.sol";
 import "../../helpers/IToken.sol";
@@ -40,7 +40,7 @@ contract BondService {
     ///  of this structure.
     struct Bond {
         // The address of the emitter of the Bond
-        address payable emitter;
+        address emitter;
         // The address of the owner of the Bond
         address         owner;
         // The Ether amount packed in the Bond
@@ -180,7 +180,7 @@ contract BondService {
     /// @param _yearFee The percentage of the commission.
     /// @return New Bond ID.
     function createBond(
-        address payable _emitter,
+        address _emitter,
         address _owner,
         uint256 _percent,
         uint256 _expiration,
@@ -292,7 +292,7 @@ contract BondService {
     /// @param _id A Bond ID.
     function takeEmitRequest(uint256 _id) external payable emitRequest(_id) {
 
-        address payable _emitter = bonds[_id].emitter;
+        address _emitter = bonds[_id].emitter;
         uint256 _eth = bonds[_id].deposit.mul(divider).div(bonds[_id].percent);
 
         require(msg.value == _eth, "Incorrect ETH value");
@@ -343,25 +343,41 @@ contract BondService {
     /// @param _id A Bond ID.
     function finish(uint256 _id) external onlyEmitter(_id) {
 
+        Bond memory bond = bonds[_id];
+
         // It's not need to check matching of the bond
         // since the expiration period cannot exceed 365 days.
-        require(now < bonds[_id].expiration, "Bond expired");
+        require(now < bond.expiration, "Bond expired");
 
-        uint256 _secondsPast = now.sub(bonds[_id].createdAt);
-        (uint256 _eth, uint256 _debt) = getBox(bonds[_id].tBoxId);
+        uint256 _secondsPast = now.sub(bond.createdAt);
+        (uint256 _eth, uint256 _debt) = getBox(bond.tBoxId);
 
-        uint256 _commission = bonds[_id].tmv.mul(_secondsPast).mul(bonds[_id].yearFee).div(365 days).div(divider);
-        uint256 _sysTMV = _commission.mul(bonds[_id].sysFee).div(divider);
+        uint256 _commission = bond.tmv
+            .mul(_secondsPast)
+            .mul(bond.yearFee)
+            .div(365 days)
+            .div(divider);
+        uint256 _sysTMV = _commission.mul(bond.sysFee).div(divider);
 
-        address _owner = bonds[_id].owner;
+        address _owner = bond.owner;
 
-        if (_sysTMV.add(_debt) > 0)
-            IToken(settings.tmvAddress()).transferFrom(msg.sender, address(this), _sysTMV.add(_debt));
-        if (_commission > 0)
-            IToken(settings.tmvAddress()).transferFrom(msg.sender, _owner, _commission.sub(_sysTMV));
+        if (_sysTMV.add(_debt) > 0) {
+            IToken(settings.tmvAddress()).transferFrom(
+                msg.sender,
+                address(this),
+                _sysTMV.add(_debt)
+            );
+        }
+        if (_commission > 0) {
+            IToken(settings.tmvAddress()).transferFrom(
+                msg.sender,
+                    _owner,
+                _commission.sub(_sysTMV)
+            );
+        }
 
         if (_eth > 0) {
-            ILogic(settings.logicManager()).close(bonds[_id].tBoxId);
+            ILogic(settings.logicManager()).close(bond.tBoxId);
             delete bonds[_id];
             msg.sender.transfer(_eth);
         } else {
@@ -415,7 +431,7 @@ contract BondService {
 
     /// @dev Withdraws system fee.
     /// @param _beneficiary The address to forward funds to.
-    function withdrawSystemETH(address payable _beneficiary) external onlyAdmin {
+    function withdrawSystemETH(address _beneficiary) external onlyAdmin {
         require(_beneficiary != address(0), "Zero address, be careful");
         require(systemETH > 0, "There is no available ETH");
 

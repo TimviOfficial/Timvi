@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
 
@@ -119,7 +119,7 @@ contract PriceGetter is usingOraclize, Ownable {
         IPFSHash = _hash;
     }
 
-    function withdraw(address payable _to, uint _amount) public onlyOwner {
+    function withdraw(address _to, uint _amount) public onlyOwner {
         address(_to).transfer(_amount);
         emit Withdraw(_to, _amount);
     }

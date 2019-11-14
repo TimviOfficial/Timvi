@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "../../helpers/SafeMath.sol";
 import "../../helpers/ISettings.sol";
@@ -34,7 +34,7 @@ contract LeverageService {
     /// @dev The main Bid struct. Every Bid is represented by a copy
     ///  of this structure.
     struct Bid {
-        address payable owner;
+        address owner;
         uint256         pack;
         uint256         percent;
     }
@@ -84,7 +84,7 @@ contract LeverageService {
     }
 
     /// @dev Withdraws system fee.
-    function withdrawSystemETH(address payable _beneficiary) external onlyAdmin {
+    function withdrawSystemETH(address _beneficiary) external onlyAdmin {
         require(_beneficiary != address(0), "Zero address, be careful");
         require(systemETH > 0, "There is no available ETH");
 
@@ -148,7 +148,7 @@ contract LeverageService {
     /// @dev Uses to match a Bid.
     function take(uint256 _id) external payable onlyExists(_id) {
 
-        address payable _owner = bids[_id].owner;
+        address _owner = bids[_id].owner;
         uint256 _eth = bids[_id].pack.mul(divider).div(bids[_id].percent);
 
         require(msg.value == _eth, "Incorrect ETH value");

@@ -1,4 +1,4 @@
-pragma solidity 0.5.11;
+pragma solidity 0.4.25;
 
 import "./helpers/TBoxToken.sol";
 import "./helpers/ISettings.sol";
@@ -91,7 +91,7 @@ contract Logic is TBoxToken {
     }
 
     /// @dev Withdraws system fee.
-    function withdrawFee(address payable _beneficiary) external onlyAdmin {
+    function withdrawFee(address _beneficiary) external onlyAdmin {
         require(_beneficiary != address(0), "Zero address, be careful");
 
         // Fee is the difference between the contract balance and
