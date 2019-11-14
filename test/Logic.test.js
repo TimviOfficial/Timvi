@@ -203,7 +203,7 @@ contract('Logic', function ([manager, owner, anotherAccount]) {
         });
         describe('success', function () {
             it("transfer 103% of capitalization amount to user", async function () {
-                let userCom = await this.settings.USER_COMM();
+                let userCom = await this.settings.userFee();
                 let divider = await this.logic.precision.call();
                 let equivalentETH = capitalization.mul(new BN(100000)).div(await this.oracle.ethUsdPrice());
                 let ether = capitalization.mul(new BN(100000)).mul(new BN(userCom)).div(new BN(divider)).div(await this.oracle.ethUsdPrice());
@@ -216,7 +216,7 @@ contract('Logic', function ([manager, owner, anotherAccount]) {
                 let profit = ether.sub(txCost);
                 expect(balanceDelta).to.be.bignumber.equal(profit);
             });
-            it("reduced TBox deposit by 106% of capitalization amount", async function () {  let userCom = await this.settings.USER_COMM();
+            it("reduced TBox deposit by 106% of capitalization amount", async function () {  let userCom = await this.settings.userFee();
                 let divider = await this.logic.precision.call();
                 let equivalentETH = capitalization.mul(new BN(100000)).div(await this.oracle.ethUsdPrice());
                 let ether = capitalization.mul(new BN(100000)).mul(new BN(userCom)).div(new BN(divider)).div(await this.oracle.ethUsdPrice());
@@ -235,7 +235,7 @@ contract('Logic', function ([manager, owner, anotherAccount]) {
             it("increases collateral percent", async function () {
                 let eth = (await this.logic.boxes(0))[0];
                 let tmv = (await this.logic.boxes(0))[1];
-                let userCom = await this.settings.USER_COMM();
+                let userCom = await this.settings.userFee();
                 let divider = await this.logic.precision.call();
                 await this.logic.capitalize(0, capitalization, {from: owner});
                 let equivalent = capitalization.mul(new BN(100000)).div(await this.oracle.ethUsdPrice());
@@ -248,7 +248,7 @@ contract('Logic', function ([manager, owner, anotherAccount]) {
             });
             it("increases system reward", async function () {
                 let balanceBefore = await balance.current(this.logic.address);
-                let userCom = await this.settings.USER_COMM();
+                let userCom = await this.settings.userFee();
                 let divider = await this.logic.precision.call();
                 await this.logic.capitalize(0, capitalization, {from: owner});
                 let reward = capitalization.mul(new BN(100000)).mul(userCom).div(await this.oracle.ethUsdPrice()).div(divider);

@@ -22,7 +22,7 @@ contract('TimviSettings', function ([]) {
         it('sets the correct value', async function () {
             let minDeposit = ether("1");
             await this.settings.setMinDepo(minDeposit);
-            let result = await this.settings.MIN_DEPO();
+            let result = await this.settings.minDeposit();
             expect(result).to.be.bignumber.equal(minDeposit);
         });
     });
@@ -34,11 +34,11 @@ contract('TimviSettings', function ([]) {
 
         });
         it('sets the correct value', async function () {
-            let feeTotal = await this.settings.FEE_TOTAL();
+            let feeTotal = await this.settings.totalFee();
             let commission = new BN(3000);
             await this.settings.setSysCom(commission);
-            let sysRes = await this.settings.SYS_COMM();
-            let userRes = await this.settings.USER_COMM();
+            let sysRes = await this.settings.sysFee();
+            let userRes = await this.settings.userFee();
             expect(sysRes).to.be.bignumber.equal(commission);
             expect(userRes).to.be.bignumber.equal(feeTotal.sub(commission));
         });
@@ -70,9 +70,9 @@ contract('TimviSettings', function ([]) {
 
             await this.settings.setFeeTotal(total, system);
 
-            let totalRes = await this.settings.FEE_TOTAL();
-            let sysRes = await this.settings.SYS_COMM();
-            let userRes = await this.settings.USER_COMM();
+            let totalRes = await this.settings.totalFee();
+            let sysRes = await this.settings.sysFee();
+            let userRes = await this.settings.userFee();
 
             expect(userRes).to.be.bignumber.equal(user);
             expect(sysRes).to.be.bignumber.equal(system);
@@ -112,7 +112,7 @@ contract('TimviSettings', function ([]) {
         it('sets the correct value', async function () {
             let value = new BN(100000);
             await this.settings.setSafetyBag(value);
-            let res = await this.settings.GLOBAL_SAFETY_BAG();
+            let res = await this.settings.globalSafetyBag();
             expect(res).to.be.bignumber.equal(value);
         });
     });

@@ -111,7 +111,7 @@ contract Logic is TBoxToken {
     /// @return New Box ID.
     function create(uint256 _tokensToWithdraw) public payable returns (uint256) {
         // Check that msg.value isn't smaller than minimum deposit
-        require(msg.value >= settings.MIN_DEPO(), "Deposit is very small");
+        require(msg.value >= settings.minDeposit(), "Deposit is very small");
 
         // Calculate collateralization when tokens are needed
         if (_tokensToWithdraw > 0) {
@@ -213,10 +213,10 @@ contract Logic is TBoxToken {
         uint256 _equivalentETH = _tmv.mul(precision).div(rate());
 
         // Calculate system fee
-        uint256 _fee = _tmv.mul(settings.SYS_COMM()).div(rate());
+        uint256 _fee = _tmv.mul(settings.sysFee()).div(rate());
 
         // Calculate user bonus
-        uint256 _userReward = _tmv.mul(settings.USER_COMM()).div(rate());
+        uint256 _userReward = _tmv.mul(settings.userFee()).div(rate());
 
         // Decrease Box's collateral amount
         boxes[_id].collateral = boxes[_id].collateral.sub(_fee.add(_userReward).add(_equivalentETH));
@@ -345,7 +345,7 @@ contract Logic is TBoxToken {
         uint256 _eth = _tmvReleased.mul(precision).div(rate());
 
         // Calculate user bonus
-        uint256 _userReward = _tmvReleased.mul(settings.USER_COMM()).div(rate());
+        uint256 _userReward = _tmvReleased.mul(settings.userFee()).div(rate());
 
         // The owner of the Box
         address _owner = ownerOf(_id);
@@ -401,7 +401,7 @@ contract Logic is TBoxToken {
         // Return available Ether to withdraw
         if (_avlbl == 0) return 0;
         uint256 _rest = boxes[_id].collateral.sub(_avlbl);
-        if (_rest < settings.MIN_DEPO()) return boxes[_id].collateral.sub(settings.MIN_DEPO());
+        if (_rest < settings.minDeposit()) return boxes[_id].collateral.sub(settings.minDeposit());
         else return _avlbl;
     }
 
