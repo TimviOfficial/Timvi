@@ -25,7 +25,7 @@ Smart contracts are written in Solidity v0.5.11
 
 #### Leverage
 
-- Deploy [ServiceToGetEtherLeverage.sol](contracts/services/leverage-exchange/LeverageService.sol) with TimviSetttings address as constructor parameter
+- Deploy [LeverageService.sol](contracts/services/leverage-exchange/LeverageService.sol) with TimviSetttings address as constructor parameter
 
 
 #### Bond
