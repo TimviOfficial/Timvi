@@ -686,13 +686,13 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
         let yearFee = new BN('10000');
         let expiration = new BN(30*24*60*60);
         let bondId = new BN(0);
-        let tmv, createdAt;
+        let tmv, createdAt, rate;
 
         beforeEach(async function () {
-            let rate = new BN(10000000);
+            rate = new BN(10000000);
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
-            await this.service.leverage(percent, expiration, yearFee, { from: emitter,value: deposit});
+            await this.service.leverage(percent, expiration, yearFee, {from: emitter,value: deposit});
             await this.service.takeEmitRequest(bondId, {value: matchDepo, from: holder});
             createdAt = await time.latest();
             await time.increase(expiration.add(new BN(1)));
@@ -742,25 +742,21 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
         it("transfers TBox ownership to Bond holder", async function () {
 
             let tBox = await this.logic.boxes(0);
-
-            let tmv = tBox[1];
-
+            let tmv = tBox.tmvReleased;
             await this.logic.create(0, {from: anotherAccount, value: deposit.mul(new BN(10))});
             await this.logic.withdrawTmvMax(1, {from: anotherAccount});
-
             await this.logic.addTmv(0, tmv, {from: anotherAccount});
-
-            await this.service.expire(bondId, {from: emitter});
+            await this.service.expire(bondId, {from: holder});
         });
         it("0-TMV TBox", async function () {
-            await this.service.expire(bondId, {from: emitter});
+            await this.service.expire(bondId, {from: holder});
 
             let apprOrOwnr = await this.logic.isApprovedOrOwner.call(holder, 0);
 
             expect(apprOrOwnr).to.be.true;
         });
         it("removes bond", async function () {
-            await this.service.expire(bondId, {from: emitter});
+            await this.service.expire(bondId, {from: holder});
 
             let bond = await this.service.bonds(bondId);
             expect(bond[0]).to.have.string(ZERO_ADDRESS);
@@ -775,7 +771,7 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
             expect(bond[9]).to.be.bignumber.equal(new BN(0));
         });
         it("emits a expiration event", async function () {
-            let {logs} = await this.service.expire(bondId, {from: emitter});
+            let {logs} = await this.service.expire(bondId, {from: holder});
 
             expectEvent.inLogs(logs, 'BondExpired', {
                 id: new BN(0),
@@ -790,16 +786,15 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
             await time.increase(expiration.add(new BN(1)));
             await this.service.expire(bondId, {from: holder});
         });
-        it("commission stays on the contract and reduces TBox deposit", async function () {
-            // let eth = new BN('32212966363220525');
-            // let sys = eth.div(new BN(10));
-            // let tx = this.service.expire(bondId, {from: emitter});
-            // let diff = await balance.difference(this.service.address, tx);
-            //
-            // let tBox = await this.logic.boxes(0);
-            //
-            // expect(diff).to.be.bignumber.equal(sys);
-            // expect(tBox[0]).to.be.bignumber.equal(deposit.sub(sys));
+        it("Returns overcollateralization to the emitter", async function () {
+            let gtc = await this.settings.globalTargetCollateralization();
+            let ethNeedToCollateral = tmv.mul(gtc).div(rate);
+            let calculatedOvercol = deposit.sub(ethNeedToCollateral);
+
+            let tx = this.service.expire(bondId, {from: holder});
+            let diff = await balance.difference(emitter, tx);
+
+            expect(diff).to.be.bignumber.equal(calculatedOvercol);
         });
     });
     describe('ETH fee withdrawing', function () {
@@ -1043,5 +1038,3 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
         });
     });
 });
-
-// Timvi Settings Ropsten 0x4a2e3883d5f574178660998b05fc7211f5b2960e

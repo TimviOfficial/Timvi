@@ -406,9 +406,7 @@ contract BondService {
     /// @dev Executes expiration process of the bond.
     /// @param _id A Bond ID.
     function expire(uint256 _id) external matched(_id) validTx {
-
         require(now > bonds[_id].expiration, "Bond hasn't expired");
-
 
         (uint256 _eth, uint256 _tmv) = getBox(bonds[_id].tBoxId);
 
@@ -418,18 +416,43 @@ contract BondService {
             return;
         }
 
-        if (_tmv != 0) {
-            _eth = ITBoxManager(settings.logicManager()).withdrawableEth(bonds[_id].tBoxId);
+        uint256 _collateralPercent = ITBoxManager(settings.logicManager()).collateralPercent(bonds[_id].tBoxId);
+        uint256 _targetCollateralPercent = settings.globalTargetCollateralization();
+        if (_collateralPercent > settings.globalTargetCollateralization()) {
+            uint256 _ethTarget = _tmv.mul(_targetCollateralPercent).div(rate()); // mul and div by precision are omitted
+            uint256 _emitterEth = _eth.sub(_ethTarget);
+            uint256 _withdrawableEth = ITBoxManager(settings.logicManager()).withdrawableEth(
+                bonds[_id].tBoxId
+            );
+            if (_emitterEth > _withdrawableEth) {
+                _emitterEth = _withdrawableEth;
+            }
+            ITBoxManager(settings.logicManager()).withdrawEth(
+                bonds[_id].tBoxId,
+                _emitterEth
+            );
+            bonds[_id].emitter.transfer(_emitterEth);
         }
+
+        _eth = ITBoxManager(settings.logicManager()).withdrawableEth(
+            bonds[_id].tBoxId
+        );
 
         uint256 _commission = _eth.mul(bonds[_id].sysFee).div(divider);
 
         if (_commission > 0) {
-            ITBoxManager(settings.logicManager()).withdrawEth(bonds[_id].tBoxId, _commission);
+            ITBoxManager(settings.logicManager()).withdrawEth(
+                bonds[_id].tBoxId,
+                _commission
+            );
             systemETH = systemETH.add(_commission);
         }
 
-        ITBoxManager(settings.logicManager()).transferFrom(address(this), bonds[_id].holder, bonds[_id].tBoxId);
+        ITBoxManager(settings.logicManager()).transferFrom(
+            address(this),
+            bonds[_id].holder,
+            bonds[_id].tBoxId
+        );
 
         emit BondExpired(_id, bonds[_id].emitter, bonds[_id].holder);
 

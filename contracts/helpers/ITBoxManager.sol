@@ -16,6 +16,7 @@ interface ITBoxManager {
     function withdrawableEth(uint256 id) external view returns(uint256);
     function withdrawableTmv(uint256 collateral) external view returns(uint256);
     function maxCapAmount(uint256 _id) external view returns (uint256);
+    function collateralPercent(uint256 _id) external view returns (uint256);
     function capitalize(uint256 _id, uint256 _tmv) external;
     function boxWithdrawableTmv(uint256 _id) external view returns(uint256);
     function addEth(uint256 _id) external payable;
