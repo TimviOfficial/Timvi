@@ -170,7 +170,7 @@ contract BondService {
         require(msg.value >= minEther, "Too small funds");
         require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
-        require(_yearFee <= 10000, "Fee out of range");
+        require(_yearFee <= 25000, "Fee out of range");
 
         return createBond(msg.sender, address(0), _percent, _expiration, _yearFee);
     }
@@ -182,7 +182,7 @@ contract BondService {
     function exchange(uint256 _expiration, uint256 _yearFee) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
-        require(_yearFee <= 10000, "Fee out of range");
+        require(_yearFee <= 25000, "Fee out of range");
 
         return createBond(address(0), msg.sender, 0, _expiration, _yearFee);
     }
@@ -298,7 +298,7 @@ contract BondService {
     function changeYearFee(uint256 _id, uint256 _yearFee) internal {
         uint256 _oldYearFee = bonds[_id].yearFee;
         if (_oldYearFee != _yearFee) {
-            require(_yearFee <= 10000, "Fee out of range");
+            require(_yearFee <= 25000, "Fee out of range");
             bonds[_id].yearFee = _yearFee;
         }
     }

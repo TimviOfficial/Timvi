@@ -44,8 +44,8 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
 
                 await expectRevert(this.service.leverage(percent, expiration, yearFee, { from: emitter, value: deposit}), "Collateralization is not enough");
             });
-            it('when year fee is higher than 10%', async function () {
-                let yearFee = new BN('10001');
+            it('when year fee is higher than 25%', async function () {
+                let yearFee = new BN('25001');
 
                 await expectRevert(this.service.leverage(percent, expiration, yearFee, { from: emitter, value: deposit}), "Fee out of range");
             });
@@ -98,8 +98,8 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
 
                 await expectRevert(this.service.exchange(expiration, yearFee, { from: emitter, value: deposit}), "Too small funds");
             });
-            it('when year fee is higher than 10%', async function () {
-                let yearFee = new BN('10001');
+            it('when year fee is higher than 25%', async function () {
+                let yearFee = new BN('25001');
 
                 await expectRevert(this.service.exchange(expiration, yearFee, { from: emitter, value: deposit}), "Fee out of range");
             });
@@ -176,8 +176,8 @@ contract('BondService', function ([_, emitter, holder, anotherAccount]) {
 
                 await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Collateralization is not enough");
             });
-            it('when year fee is higher than 10%', async function () {
-                let yearFee = new BN('10001');
+            it('when year fee is higher than 25%', async function () {
+                let yearFee = new BN('25001');
 
                 await expectRevert(this.service.emitterChange(bondId, newDeposit, percent, expiration, yearFee, { from: emitter, value: deltaDeposit}), "Fee out of range");
             });
