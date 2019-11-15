@@ -19,7 +19,7 @@ Smart contracts are written in Solidity v0.5.11
 1. Set deployed ERC20 address in settings using `setTmvAddress` function
 1. Deploy [PriceGetter.sol](oracle-contract/PriceGetter.sol)
 1. Set deployed oracle address in settings using `setOracleAddress` function
-1. Deploy [Logic.sol](contracts/TBoxManager.sol) with TimviSetttings address as constructor parameter
+1. Deploy [TBoxManager.sol](contracts/TBoxManager.sol) with TimviSetttings address as constructor parameter
 1. Call `setContractManager` setting's function with deployed contract address
 
 
