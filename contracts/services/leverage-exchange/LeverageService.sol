@@ -98,7 +98,7 @@ contract LeverageService {
         feeExchange = 500; // 0.5%
         emit FeeUpdated(feeLeverage, feeExchange);
 
-        minEther = 1 ether;
+        minEther = 0.1 ether;
         emit MinEtherUpdated(minEther);
     }
 
