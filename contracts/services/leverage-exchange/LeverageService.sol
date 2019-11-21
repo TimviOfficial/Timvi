@@ -54,7 +54,7 @@ contract LeverageService {
 
     event FeeUpdated(uint256 leverage, uint256 exchange);
     event MinEtherUpdated(uint256 value);
-    event Transferred(address from, address to, uint256 id);
+    event Transferred(address indexed from, address indexed to, uint256 indexed id);
 
     /// @dev Defends against front-running attacks.
     modifier validTx() {

@@ -84,8 +84,8 @@ contract BondService {
     event BondHolderFeeUpdated(uint256 _value);
     event BondEmitterFeeUpdated(uint256 _value);
     event BondMinEtherUpdated(uint256 _value);
-    event EmitterRightsTransferred(address indexed from, address indexed to, uint id);
-    event HolderRightsTransferred(address indexed from, address indexed to, uint id);
+    event EmitterRightsTransferred(address indexed from, address indexed to, uint indexed id);
+    event HolderRightsTransferred(address indexed from, address indexed to, uint indexed id);
 
     /// @dev Defends against front-running attacks.
     modifier validTx() {
