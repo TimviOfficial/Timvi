@@ -386,7 +386,7 @@ contract BondService {
         if (_commission > 0) {
             IToken(settings.tmvAddress()).transferFrom(
                 msg.sender,
-                    _holder,
+                _holder,
                 _commission.sub(_sysTMV)
             );
         }
