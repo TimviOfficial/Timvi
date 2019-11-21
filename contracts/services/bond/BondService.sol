@@ -106,7 +106,7 @@ contract BondService {
         _;
     }
 
-    /// @dev Access modifier for emitter-only functionality.
+    /// @dev Access modifier for holder-only functionality.
     /// @param _id A Bond ID.
     modifier onlyHolder(uint256 _id) {
         require(bonds[_id].holder == msg.sender, "You are not the holder");
