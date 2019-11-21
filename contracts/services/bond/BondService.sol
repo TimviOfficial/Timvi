@@ -418,7 +418,7 @@ contract BondService {
 
         uint256 _collateralPercent = ITBoxManager(settings.logicManager()).collateralPercent(bonds[_id].tBoxId);
         uint256 _targetCollateralPercent = settings.globalTargetCollateralization();
-        if (_collateralPercent > settings.globalTargetCollateralization()) {
+        if (_collateralPercent > _targetCollateralPercent) {
             uint256 _ethTarget = _tmv.mul(_targetCollateralPercent).div(rate()); // mul and div by precision are omitted
             uint256 _emitterEth = _eth.sub(_ethTarget);
             uint256 _withdrawableEth = ITBoxManager(settings.logicManager()).withdrawableEth(
