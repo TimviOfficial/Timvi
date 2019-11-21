@@ -15,5 +15,5 @@ interface ISettings {
     function minStability() external view returns(uint256);
     function gasPriceLimit() external view returns(uint256);
     function isFeeManager(address account) external view returns (bool);
-    function logicManager() external view returns(address);
+    function tBoxManager() external view returns(address);
 }

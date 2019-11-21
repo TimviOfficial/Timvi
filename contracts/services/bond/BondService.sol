@@ -168,7 +168,7 @@ contract BondService {
     /// @return New Bond ID.
     function leverage(uint256 _percent, uint256 _expiration, uint256 _yearFee) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
-        require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value), "Collateralization is not enough");
+        require(_percent >= ITBoxManager(settings.tBoxManager()).withdrawPercent(msg.value), "Collateralization is not enough");
         require(_expiration >= 1 days && _expiration <= 365 days, "Expiration out of range");
         require(_yearFee <= 25000, "Fee out of range");
 
@@ -282,7 +282,7 @@ contract BondService {
     function changePercent(uint256 _id, uint256 _percent) internal {
         uint256 _oldPercent = bonds[_id].percent;
         if (_percent != 0 && _oldPercent != _percent) {
-            require(_percent >= ITBoxManager(settings.logicManager()).withdrawPercent(bonds[_id].deposit), "Collateralization is not enough");
+            require(_percent >= ITBoxManager(settings.tBoxManager()).withdrawPercent(bonds[_id].deposit), "Collateralization is not enough");
             bonds[_id].percent = _percent;
         }
     }
@@ -316,7 +316,7 @@ contract BondService {
         systemETH = systemETH.add(_sysEth);
 
         uint256 _tmv = _eth.mul(rate()).div(precision());
-        uint256 _box = ITBoxManager(settings.logicManager()).create.value(bonds[_id].deposit)(_tmv);
+        uint256 _box = ITBoxManager(settings.tBoxManager()).create.value(bonds[_id].deposit)(_tmv);
 
         bonds[_id].holder = msg.sender;
         bonds[_id].tmv = _tmv;
@@ -340,7 +340,7 @@ contract BondService {
         systemETH = systemETH.add(_sysEth);
 
         uint256 _tmv = bonds[_id].deposit.mul(rate()).div(precision());
-        uint256 _box = ITBoxManager(settings.logicManager()).create.value(msg.value)(_tmv);
+        uint256 _box = ITBoxManager(settings.tBoxManager()).create.value(msg.value)(_tmv);
 
         bonds[_id].emitter = msg.sender;
         bonds[_id].tmv = _tmv;
@@ -392,7 +392,7 @@ contract BondService {
         }
 
         if (_eth > 0) {
-            ITBoxManager(settings.logicManager()).close(bond.tBoxId);
+            ITBoxManager(settings.tBoxManager()).close(bond.tBoxId);
             delete bonds[_id];
             msg.sender.transfer(_eth);
         } else {
@@ -416,39 +416,39 @@ contract BondService {
             return;
         }
 
-        uint256 _collateralPercent = ITBoxManager(settings.logicManager()).collateralPercent(bonds[_id].tBoxId);
+        uint256 _collateralPercent = ITBoxManager(settings.tBoxManager()).collateralPercent(bonds[_id].tBoxId);
         uint256 _targetCollateralPercent = settings.globalTargetCollateralization();
         if (_collateralPercent > _targetCollateralPercent) {
             uint256 _ethTarget = _tmv.mul(_targetCollateralPercent).div(rate()); // mul and div by precision are omitted
             uint256 _emitterEth = _eth.sub(_ethTarget);
-            uint256 _withdrawableEth = ITBoxManager(settings.logicManager()).withdrawableEth(
+            uint256 _withdrawableEth = ITBoxManager(settings.tBoxManager()).withdrawableEth(
                 bonds[_id].tBoxId
             );
             if (_emitterEth > _withdrawableEth) {
                 _emitterEth = _withdrawableEth;
             }
-            ITBoxManager(settings.logicManager()).withdrawEth(
+            ITBoxManager(settings.tBoxManager()).withdrawEth(
                 bonds[_id].tBoxId,
                 _emitterEth
             );
             bonds[_id].emitter.transfer(_emitterEth);
         }
 
-        _eth = ITBoxManager(settings.logicManager()).withdrawableEth(
+        _eth = ITBoxManager(settings.tBoxManager()).withdrawableEth(
             bonds[_id].tBoxId
         );
 
         uint256 _commission = _eth.mul(bonds[_id].sysFee).div(divider);
 
         if (_commission > 0) {
-            ITBoxManager(settings.logicManager()).withdrawEth(
+            ITBoxManager(settings.tBoxManager()).withdrawEth(
                 bonds[_id].tBoxId,
                 _commission
             );
             systemETH = systemETH.add(_commission);
         }
 
-        ITBoxManager(settings.logicManager()).transferFrom(
+        ITBoxManager(settings.tBoxManager()).transferFrom(
             address(this),
             bonds[_id].holder,
             bonds[_id].tBoxId
@@ -462,7 +462,7 @@ contract BondService {
     /// @dev Returns TBox parameters.
     /// @param _id A Bond ID.
     function getBox(uint256 _id) public view returns(uint256, uint256) {
-        return ITBoxManager(settings.logicManager()).boxes(_id);
+        return ITBoxManager(settings.tBoxManager()).boxes(_id);
     }
 
     /// @dev Needs to claim funds from the logic contract to execute finishing and expiration.
@@ -523,7 +523,7 @@ contract BondService {
 
     /// @dev Returns precision using for USD and commission calculation.
     function precision() public view returns(uint256) {
-        return ITBoxManager(settings.logicManager()).precision();
+        return ITBoxManager(settings.tBoxManager()).precision();
     }
 
     /// @dev Returns current oracle ETH/USD price with precision.

@@ -152,7 +152,7 @@ contract LeverageService {
     function create(uint256 _percent) public payable returns (uint256) {
         require(msg.value >= minEther, "Too small funds");
         require(_percent == 0
-            || _percent >= ITBoxManager(settings.logicManager()).withdrawPercent(msg.value),
+            || _percent >= ITBoxManager(settings.tBoxManager()).withdrawPercent(msg.value),
             "Collateral percent out of range"
         );
 
@@ -179,16 +179,16 @@ contract LeverageService {
 
         uint256 _sysEth = _eth.mul(feeLeverage).div(divider);
         systemETH = systemETH.add(_sysEth);
-        uint256 _tmv = _eth.mul(ITBoxManager(settings.logicManager()).rate()).div(
-            ITBoxManager(settings.logicManager()).precision()
+        uint256 _tmv = _eth.mul(ITBoxManager(settings.tBoxManager()).rate()).div(
+            ITBoxManager(settings.tBoxManager()).precision()
         );
-        uint256 _box = ITBoxManager(settings.logicManager()).create.value(
+        uint256 _box = ITBoxManager(settings.tBoxManager()).create.value(
             orders[_id].pack
         )(_tmv);
         uint256 _sysTmv = _tmv.mul(feeLeverage).div(divider);
         delete orders[_id];
         _owner.transfer(_eth.sub(_sysEth));
-        ITBoxManager(settings.logicManager()).transferFrom(
+        ITBoxManager(settings.tBoxManager()).transferFrom(
             address(this),
             _owner,
             _box
@@ -203,12 +203,12 @@ contract LeverageService {
         uint256 _eth = orders[_id].pack;
         uint256 _sysEth = _eth.mul(feeExchange).div(divider);
         systemETH = systemETH.add(_sysEth);
-        uint256 _tmv = _eth.mul(ITBoxManager(settings.logicManager()).rate()).div(ITBoxManager(settings.logicManager()).precision());
-        uint256 _box = ITBoxManager(settings.logicManager()).create.value(msg.value)(_tmv);
+        uint256 _tmv = _eth.mul(ITBoxManager(settings.tBoxManager()).rate()).div(ITBoxManager(settings.tBoxManager()).precision());
+        uint256 _box = ITBoxManager(settings.tBoxManager()).create.value(msg.value)(_tmv);
         uint256 _sysTmv = _tmv.mul(feeExchange).div(divider);
         delete orders[_id];
         msg.sender.transfer(_eth.sub(_sysEth));
-        ITBoxManager(settings.logicManager()).transferFrom(address(this), msg.sender, _box);
+        ITBoxManager(settings.tBoxManager()).transferFrom(address(this), msg.sender, _box);
         IToken(settings.tmvAddress()).transfer(_owner, _tmv.sub(_sysTmv));
         emit OrderMatched(_id, _box, msg.sender, _owner);
         return _tmv.sub(_sysTmv);

@@ -10,7 +10,7 @@ contract ManagerRole {
 
     address public feeManager;
     address public settingsManager;
-    address public logicManager;
+    address public tBoxManager;
 
     constructor () internal {
         settingsManager = msg.sender;
@@ -41,7 +41,7 @@ contract ManagerRole {
     }
 
     function isContractManager(address account) public view returns (bool) {
-        return account == logicManager;
+        return account == tBoxManager;
     }
 
     function setContractManager(address account) public onlySettingsManager {
@@ -59,7 +59,7 @@ contract ManagerRole {
 
 
     function _setContract(address account) internal {
-        logicManager = account;
+        tBoxManager = account;
         emit ContractManagerAdded(account);
     }
 }

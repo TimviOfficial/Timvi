@@ -242,7 +242,7 @@ contract Gate {
 
     /// @dev Returns precision using for USD and commission calculation.
     function precision() public view returns(uint256) {
-        return ITBoxManager(settings.logicManager()).precision();
+        return ITBoxManager(settings.tBoxManager()).precision();
     }
 
     /// @dev Calculates the ether amount to pay for a provided TMV amount.
