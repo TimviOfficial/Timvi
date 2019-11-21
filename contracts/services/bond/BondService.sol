@@ -360,7 +360,7 @@ contract BondService {
 
         Bond memory bond = bonds[_id];
 
-        // It's not needed to check matching of the bond
+        // It's not necessary to check matching of the bond
         // since the expiration period cannot exceed 365 days.
         require(now < bond.expiration, "Bond expired");
 

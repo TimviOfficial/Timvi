@@ -285,7 +285,7 @@ contract TBoxManager is TBoxToken {
     /// @param _id A Box ID.
     /// @param _amount The number of tokens to withdraw.
     function withdrawTmv(uint256 _id, uint256 _amount) public onlyApprovedOrOwner(_id) validTx {
-        require(_amount > 0, "Withdrawing zero doesn't help you buy lamba");
+        require(_amount > 0, "Withdrawing zero");
 
         // Check the number of tokens
         require(_amount <= boxWithdrawableTmv(_id), "You can't withdraw so much");
@@ -542,7 +542,7 @@ contract TBoxManager is TBoxToken {
     /// @dev Returns the number of TMV that can capitalize the specified Box.
     function maxCapAmount(uint256 _id) public view onlyExists(_id) returns (uint256) {
         uint256 _colP = collateralPercent(_id);
-        require(_colP >= settings.minStability() && _colP < settings.maxStability(), "It's possible to capitalize only toxic Boxes");
+        require(_colP >= settings.minStability() && _colP < settings.maxStability(), "It's only possible to capitalize toxic Boxes");
 
         Box memory box = boxes[_id];
 

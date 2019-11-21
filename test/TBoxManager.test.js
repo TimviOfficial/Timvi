@@ -193,11 +193,11 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
             });
             it("when collateral percent less than min", async function () {
                 await this.oracle.setPrice(1999000);
-                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'It\'s possible to capitalize only toxic Boxes');
+                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'It\'s only possible to capitalize toxic Boxes');
             });
             it("when collateral is large than max", async function () {
                 await this.oracle.setPrice(15000000);
-                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'It\'s possible to capitalize only toxic Boxes');
+                await expectRevert(this.logic.capitalize(0, capitalization, {from: owner}), 'It\'s only possible to capitalize toxic Boxes');
             });
             it("when collateral after capitalization is higher than 160%", async function () {
                 let maxCapAmount = new BN('65566019312140609742');
@@ -356,7 +356,7 @@ contract('TBoxManager', function ([manager, owner, anotherAccount]) {
                 await expectRevert(this.logic.withdrawTmv(0, withdraw, {from: owner, gasPrice: new BN("21000000000")}), "Gas price is greater than allowed");
             });
             it("withdrawing zero", async function () {
-                await expectRevert(this.logic.withdrawTmv(0, 0, {from: owner}), "Withdrawing zero doesn't help you buy lamba");
+                await expectRevert(this.logic.withdrawTmv(0, 0, {from: owner}), "Withdrawing zero");
             });
             it("if TBox doesn't exist", async function () {
                 await expectRevert.unspecified(this.logic.withdrawTmv(100, withdraw, {from: owner}));
