@@ -171,7 +171,7 @@ contract LeverageService {
     }
 
     /// @dev Uses to match a leverage Order.
-    function takeLeverageOrder(uint256 _id) external payable ensureLeverageOrder(_id) validTx {
+    function takeLeverageOrder(uint256 _id) external payable ensureLeverageOrder(_id) validTx returns(uint256) {
         address _owner = orders[_id].owner;
         uint256 _eth = orders[_id].pack.mul(divider).div(orders[_id].percent);
 
@@ -195,6 +195,7 @@ contract LeverageService {
         );
         IToken(settings.tmvAddress()).transfer(msg.sender, _tmv.sub(_sysTmv));
         emit OrderMatched(_id, _box, msg.sender, _owner);
+        return _box;
     }
 
     /// @dev Uses to match an exchange Order.
@@ -211,7 +212,7 @@ contract LeverageService {
         ITBoxManager(settings.tBoxManager()).transferFrom(address(this), msg.sender, _box);
         IToken(settings.tmvAddress()).transfer(_owner, _tmv.sub(_sysTmv));
         emit OrderMatched(_id, _box, msg.sender, _owner);
-        return _tmv.sub(_sysTmv);
+        return _box;
     }
 
     /// @dev Transfers ownership of an Order.
