@@ -365,40 +365,37 @@ contract BondService {
         require(now < bond.expiration, "Bond expired");
 
         uint256 _secondsPast = now.sub(bond.createdAt);
-        (uint256 _eth, uint256 _debt) = getBox(bond.tBoxId);
+        (uint256 _eth, ) = getBox(bond.tBoxId);
 
-        uint256 _commission = bond.tmv
+        uint256 _yearFee = bond.tmv
             .mul(_secondsPast)
             .mul(bond.yearFee)
             .div(365 days)
             .div(divider);
-        uint256 _sysTMV = _commission.mul(bond.sysFee).div(divider);
+        uint256 _sysTMV = _yearFee.mul(bond.sysFee).div(divider);
 
         address _holder = bond.holder;
 
-        if (_sysTMV.add(_debt) > 0) {
+        if (_sysTMV > 0) {
             IToken(settings.tmvAddress()).transferFrom(
                 msg.sender,
                 address(this),
-                _sysTMV.add(_debt)
+                _sysTMV
             );
         }
-        if (_commission > 0) {
+        if (_yearFee > 0) {
             IToken(settings.tmvAddress()).transferFrom(
                 msg.sender,
                 _holder,
-                _commission.sub(_sysTMV)
+                _yearFee.sub(_sysTMV)
             );
         }
 
         if (_eth > 0) {
-            ITBoxManager(settings.tBoxManager()).close(bond.tBoxId);
-            delete bonds[_id];
-            msg.sender.transfer(_eth);
-        } else {
-            // when TBox no longer exists
-            delete bonds[_id];
+            ITBoxManager(settings.tBoxManager()).transferFrom(address(this), msg.sender, bond.tBoxId);
         }
+        // when TBox no longer exists
+        delete bonds[_id];
 
         emit BondFinished(_id, msg.sender, _holder);
     }
