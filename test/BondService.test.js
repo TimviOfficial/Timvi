@@ -520,15 +520,16 @@ contract('BondService', function ([_, issuer, holder, anotherAccount]) {
         let yearFee = new BN('10000');
         let divivder = new BN('100000');
         let expiration = new BN(30*24*60*60);
-        let bondId = new BN(0);
-        let tmv, commission, sysCom, createdAt;
+        let tmv, commission, sysCom, createdAt, boxId, bondId;
 
         beforeEach(async function () {
             let rate = new BN(10000000);
             let precision = new BN(100000);
             tmv = matchDepo.mul(rate).div(precision);
-            await this.service.leverage(percent, expiration, yearFee, { from: issuer, value: deposit });
+            const { logs } = await this.service.leverage(percent, expiration, yearFee, { from: issuer, value: deposit });
+            bondId = logs[0].args.id;
             await this.service.takeIssueRequest(bondId, {value: matchDepo, from: holder });
+            boxId = (await this.service.bonds(bondId)).tBoxId;
             createdAt = await time.latest();
             await this.token.transfer(issuer, tmv, {from: holder});
             await this.logic.create(1000, {from: issuer, value: deposit.mul(new BN(10))});
@@ -548,7 +549,8 @@ contract('BondService', function ([_, issuer, holder, anotherAccount]) {
             await expectRevert(this.service.finish(bondId, {from: issuer}), 'Bond expired');
         });
         it("reverts when approved token amount is less than need to close", async function () {
-            await this.token.decreaseAllowance(this.service.address, constants.MAX_INT256, {from: issuer});
+            await time.increase(expiration.div(new BN(2)));
+            await this.token.approve(this.service.address, 0, {from: issuer});
             await expectRevert.unspecified(this.service.finish(bondId, {from: issuer}));
         });
         it("reverts when approved token amount is less than need to pay commission", async function () {
@@ -556,8 +558,7 @@ contract('BondService', function ([_, issuer, holder, anotherAccount]) {
             let secondsPast = expiration.div(new BN(2));
             let year = new BN(365*24*60*60);
             commission = tmv.mul(secondsPast).mul(yearFee).div(year).div(divivder);
-            sysCom = commission.mul(new BN('10000')).div(divivder);
-            await this.token.approve(this.service.address, tmv.add(sysCom), {from: issuer});
+            await this.token.approve(this.service.address, commission.sub(new BN(1)), {from: issuer});
             await expectRevert.unspecified(this.service.finish(bondId, {from: issuer}));
         });
         it("removes bond when tbox doesn't exist", async function () {
@@ -585,17 +586,9 @@ contract('BondService', function ([_, issuer, holder, anotherAccount]) {
             expect(bond[8]).to.be.bignumber.equal(new BN(0));
             expect(bond[9]).to.be.bignumber.equal(new BN(0));
         });
-        it("removes record about TBox", async function () {
-            await time.increase(new BN(100));
-            await this.service.finish(bondId, {from: issuer});
-            let tBox = await this.logic.boxes(0);
-            expect(tBox[0]).to.be.bignumber.equal(new BN(0));
-            expect(tBox[1]).to.be.bignumber.equal(new BN(0));
-        });
         it("0 commission", async function () {
             await this.service.setHolderFee(0);
             let bondId = 1;
-
 
             await this.service.leverage(percent, expiration, yearFee, { from: issuer,value: deposit});
             await this.service.takeIssueRequest(bondId, {value: matchDepo, from: holder});
@@ -628,11 +621,10 @@ contract('BondService', function ([_, issuer, holder, anotherAccount]) {
             await this.service.finish(bondId, {from: issuer});
             // console.log((await this.token.balanceOf(issuer)).sub(new BN('68450026049437784229')).toString())
         });
-        it("sends ETH to issuer", async function () {
-            let tx = this.service.finish(bondId, {from: issuer});
-            let diff = await balance.differenceExcludeGas(issuer, tx, this.gasPrice);
-
-            expect(diff).to.be.bignumber.equal(deposit);
+        it('sends TBox to issuer', async function() {
+            await this.service.finish(bondId, { from: issuer });
+            const boxOwner = await this.logic.ownerOf(boxId);
+            expect(boxOwner).to.equal(issuer);
         });
         it("emits a finish event", async function () {
             let {logs} = await this.service.finish(bondId, {from: issuer});
